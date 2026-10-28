@@ -13,8 +13,6 @@ namespace HalfGripProcTrack
 		public string Name;
 		/// <summary>The object, below the scene's ENVIROMENT, in the '|' path syntax of <see cref="MapProfile"/>.</summary>
 		public string Path;
-		/// <summary>True: every child of the object is carried on its own (a set of hammers). False: the object as a whole.</summary>
-		public bool Each;
 		public int Count = 1;
 		/// <summary>True: it stands on or beside the road, so it is put on a straight stretch. False: it stands apart (a machine beside the road) and only needs room.</summary>
 		public bool OnRoad = true;
@@ -23,12 +21,6 @@ namespace HalfGripProcTrack
 		public bool HideOriginal = true;
 		/// <summary>Other objects (same '|' paths) carried with this one by the same move, keeping their place relative to it (the hammers inside the factory hall).</summary>
 		public string[] Also = new string[0];
-		/// <summary>
-		/// 0: carried at its own size. Otherwise, if its half length along the road is more than this many metres it is shrunk about the point
-		/// it is anchored at until it is not (the factory hall is far longer than any straight), but not below MinScale.
-		/// </summary>
-		public float MaxHalf;
-		public float MinScale = 0.4f;
 		/// <summary>
 		/// True: the object is anchored to the old road's sharpest bend near it (a U-turn) and put on the lap's first U-turn, turned and sized to
 		/// match (the factory hall, which the old road turns through). Nothing else about where it goes is searched.
@@ -98,8 +90,6 @@ public double Neck = 300.0;
 public float SpinnerAlong;
 		/// <summary>Above 0: the spinner stands this far (metres) to the side of the road, so its arms sweep across the tarmac.</summary>
 		public float SpinnerLateral;
-		/// <summary>True: a heavy wall stands beyond the hairpin's outside, with a hazard-striped face, to crash into when the turn is missed.</summary>
-		public bool HairpinWall;
 		/// <summary>True: a thick stand of the scene's own trees stands beyond the hairpin's outside, to fly into when the turn is missed.</summary>
 		public bool HairpinTrees;
 		/// <summary>True: sheds, containers, towers and pipes from the scene's own factory yard, and runs of wall and fence, line the road.</summary>
@@ -108,8 +98,12 @@ public bool Yard;
 public float Expand = 1f;
 		/// <summary>True (with Expand): the enlarged terrain is flat at the old middle height, with only the seeded hills (Roughness) on it.</summary>
 		public bool FlatBase;
-		/// <summary>True: curve signs before the sharp bends and a few burning barrels at them (the Factory's own).</summary>
+		/// <summary>True: curve signs before the sharp bends, and a few burning barrels at them, copied from the scene's own (see SignGroup and FireGroups).</summary>
 		public bool Markers;
+		/// <summary>The group (in the '|' path syntax) whose children are the scene's curve signs. Each is a left or a right sign by its material.</summary>
+		public string SignGroup;
+		/// <summary>The scene's burning barrels to copy to the bends. Empty: no barrels.</summary>
+		public string[] FireGroups = new string[0];
 		/// <summary>True: new grass is laid along both edges of the road, from the scene's own grass layer, so the road shows from afar.</summary>
 		public bool EdgeGrass;
 		/// <summary>True: a tall invisible wall round the edge of the terrain.</summary>
@@ -230,8 +224,10 @@ Tornado = true,
 
 		/// <summary>
 		/// A crater floor ringed by mountains. The road is a 33,000 vertex mesh in Track3, with a snow plane, a dirt plane and a pit wall
-		/// that all follow the old road; they go. The terrain's own grip is uniform, so nothing is painted. The cave (a tunnel) is carried
-		/// onto a straight of the new lap, the banks are wide and gentle, and stands of the scene's trees are added beside the road.
+		/// that all follow the old road; they go. The terrain's own grip is uniform, so nothing is painted. The cave is hidden and a new ice
+		/// tube is built over a bendy stretch of the lap from its rock (see TerrainScene.Tunnel), the twisty ramps are carried onto the
+		/// starts of straights, the scene's curve signs are set before the sharp bends, the banks are wide and gentle, and stands of the
+		/// scene's trees are added beside the road.
 		/// </summary>
 		public static readonly MapProfile Mountain = new MapProfile
 		{
@@ -269,6 +265,8 @@ StraightMin = 360.0,
 			RoadColor = new Color(0.30f, 0.32f, 0.36f),
 			RoadTile = 60f,
 			RoadsideTrees = 0.75f,
+			Markers = true,
+			SignGroup = "Decoration|CurveSigns",
 Tunnel = true,
 				Transplants = new[]
 				{
@@ -281,9 +279,11 @@ Tunnel = true,
 
 		/// <summary>
 		/// An open dirt basin with a factory yard in it. The old track has no road of its own: the terrain is the road, with uniform grip.
-		/// The new lap is painted onto it with the asphalt layer so it can be seen. The three hazards (the spinner with two blocks, the barrel
-		/// machine, the roadside hammers) are carried onto the new lap; the rest of the hazard group is hidden. The yard, the camp and the water
-		/// tower are steered clear of.
+		/// The new lap is painted onto it with the asphalt layer so it can be seen. The factory hall (with its barrel machine and one set of
+		/// hammers) is fitted round the lap's first U-turn, the giant spinner stands across the road on the big loop, and the other set of
+		/// hammers goes on a straight; the rest of the hazard group is hidden. The camp and the water tower are steered clear of; the yard's
+		/// sheds, containers, towers and pipes, with runs of wall and fence, line the road (see TerrainScene.Yard). The terrain is enlarged
+		/// and flattened round the old area so the 3.4 km lap fits.
 		/// </summary>
 		public static readonly MapProfile Factory = new MapProfile
 		{
@@ -318,9 +318,10 @@ SpinnerAlong = 1500f,
 			SpinnerLateral = 45f,
 			MinRadius = 30.0,
 Separation = 120.0,
-			HairpinWall = false,
 Yard = true,
 			Markers = true,
+			SignGroup = "Decor|Curve Signs",
+			FireGroups = new[] { "Decor|Tomberon", "Decor|GarbageInFlames" },
 			EdgeGrass = true,
 Roughness = 14f,
 			RoughWave = 420f,

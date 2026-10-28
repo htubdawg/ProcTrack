@@ -71,39 +71,6 @@ namespace HalfGripProcTrack
 			return sum >= 0f ? 1f : -1f;
 		}
 
-		// ---- the wall beyond the hairpin ---------------------------------------------------------------------------------
-
-		/// <summary>A heavy wall, 9 m high with a hazard-striped face and a red and white cap, round the outside of the hairpin and a little way along each straight.</summary>
-		private static void BuildHairpinWall(Layout layout, Material source)
-		{
-			if (layout.Hairpin < 0)
-			{
-				return;
-			}
-			int n = layout.Count;
-			float h = RoadHalfWidth;
-			float side = OutsideSide(layout);
-			float a = h + 3f;
-			float b = a + 3f;
-			int first = layout.Hairpin - layout.HairpinSpan / 2 - 14;
-			int count = layout.HairpinSpan + 28;
-			Dictionary<string, Batch> batches = new Dictionary<string, Batch>();
-			Color concrete = new Color(0.55f, 0.55f, 0.57f);
-			Loop.SweepRange(GetBatch(batches, "hairpin wall", concrete, true, true), layout, new[] { new Vector2(side * a, -1f), new Vector2(side * b, -1f), new Vector2(side * b, 9f), new Vector2(side * a, 9f) }, first, count);
-			for (int q = 0; q < count; q++)
-			{
-				int i = ((first + q) % n + n) % n;
-				bool dark = (q / 2) % 2 == 0;
-				// The face toward the road, from 0.2 to 3.4 m, in black and yellow slabs; the cap in red and white.
-				Vector3 toRoad = layout.Right(i) * -side;
-				float lat = side * (a - 0.03f);
-				GetBatch(batches, dark ? "hairpin black" : "hairpin yellow", dark ? new Color(0.06f, 0.06f, 0.06f) : new Color(0.95f, 0.78f, 0.05f)).Quad(layout.At(i, lat, 0.2f), layout.At(i, lat, 3.4f), layout.At(i + 1, lat, 3.4f), layout.At(i + 1, lat, 0.2f), toRoad);
-				Loop.Cell(GetBatch(batches, dark ? "hairpin cap red" : "hairpin cap white", dark ? new Color(0.8f, 0.1f, 0.08f) : new Color(0.92f, 0.92f, 0.9f)), layout, i, side * a, side * b, 9.04f);
-			}
-			int meshes = Emit(batches, root.transform, source);
-			Mod.Info(P.Key + ": wall of " + count + " points (" + meshes + " meshes) beyond the hairpin's outside at lap point " + layout.Hairpin + " of " + n);
-		}
-
 		// ---- the trees beyond the hairpin --------------------------------------------------------------------------------
 
 		/// <summary>About 70 of the scene's own trees on the hairpin's outside, from just beyond the cleared strip out to 70 m, so missing the turn ends in the woods.</summary>

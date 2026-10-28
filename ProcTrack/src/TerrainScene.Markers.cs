@@ -30,7 +30,8 @@ namespace HalfGripProcTrack
 			Quaternion turn = Quaternion.identity;
 			if (signed)
 			{
-				// The old sign faced oncoming traffic one way or the other along the road; the copy keeps that relation to the new road.
+				// The sign is a thin board whose face points along its local X (src.right). The old one faced along its road one way or the other;
+				// the copy is turned to face along the new road the other way round, which shows its arrow mirrored (PlanMarkers picks for that).
 				int m = 0;
 				float best = float.MaxValue;
 				for (int i = 0; i < oldRoad.Count; i++)
@@ -72,29 +73,30 @@ namespace HalfGripProcTrack
 		/// </summary>
 		private static void PlanMarkers(GameObject env, Layout layout, List<Vector3> oldSamples)
 		{
-			if (pen == null)
-			{
-				return;
-			}
+			EnsurePen();
 			oldRoad = oldSamples;
 			List<Transform> lefts = new List<Transform>();
 			List<Transform> rights = new List<Transform>();
-			foreach (Transform group in FindAll(env.transform, "Decor|Curve Signs"))
+			if (P.SignGroup != null)
 			{
-				foreach (Transform sign in group)
+				foreach (Transform group in FindAll(env.transform, P.SignGroup))
 				{
-					if (sign.name.StartsWith("Left"))
+					foreach (Transform sign in group)
 					{
-						lefts.Add(sign);
-					}
-					else if (sign.name.StartsWith("Right"))
-					{
-						rights.Add(sign);
+						bool? isLeft = SignIsLeft(sign);
+						if (isLeft == true)
+						{
+							lefts.Add(sign);
+						}
+						else if (isLeft == false)
+						{
+							rights.Add(sign);
+						}
 					}
 				}
 			}
 			List<Transform> fires = new List<Transform>();
-			foreach (string path in new[] { "Decor|Tomberon", "Decor|GarbageInFlames" })
+			foreach (string path in P.FireGroups)
 			{
 				fires.AddRange(FindAll(env.transform, path));
 			}
@@ -144,29 +146,74 @@ namespace HalfGripProcTrack
 				taken.Add(c);
 				bool left = sum[c] > 0f;
 				float outside = left ? 1f : -1f;
-				List<Transform> pool = left ? lefts : rights;
+				// Turned to the new road as Mark turns it, a copy shows its arrow mirrored from the driver's seat (seen in game on the Factory:
+				// a left sign at a left bend pointed right). So a left bend takes a right sign, whose arrow then reads left. It still stands on
+				// the outside of the bend, as the game's own signs do.
+				List<Transform> pool = left ? rights : lefts;
 				if (pool.Count == 0)
 				{
-					pool = left ? rights : lefts;
+					pool = left ? lefts : rights;
 				}
 				int before = ((c - Mathf.RoundToInt(70f / layout.Step)) % n + n) % n;
-				if (pool.Count > 0 && before > ahead + 4)
+				if (pool.Count > 0 && before > ahead + 4 && !InTunnel(before, n))
 				{
-Vector3 at = layout.At(before, outside * (h + 4f), 0f);
+					Vector3 at = layout.At(before, outside * (h + 4f), 0f);
 					if (!(spinnerSet && Flat(at - spinnerPos).magnitude < spinnerR))
-					Mark(pool[signs % pool.Count], at, Tangent(layout, before), 0.1f, true);
-					signs++;
+					{
+						Mark(pool[signs % pool.Count], at, Tangent(layout, before), 0.1f, true);
+						signs++;
+					}
 				}
 				if (fires.Count > 0 && barrels < 4)
 				{
 					int apex = (c + window / 2) % n;
-Vector3 at = layout.At(apex, outside * (h + 6.5f), 0f);
-					if (!(spinnerSet && Flat(at - spinnerPos).magnitude < spinnerR))
-					Mark(fires[barrels % fires.Count], at, Vector3.forward, 0.3f, false);
-					barrels++;
+					Vector3 at = layout.At(apex, outside * (h + 6.5f), 0f);
+					if (!(spinnerSet && Flat(at - spinnerPos).magnitude < spinnerR) && !InTunnel(apex, n))
+					{
+						Mark(fires[barrels % fires.Count], at, Vector3.forward, 0.3f, false);
+						barrels++;
+					}
 				}
 			}
-			Mod.Info(P.Key + ": " + signs + " curve signs and " + barrels + " burning barrels set at " + taken.Count + " bends");
+			Mod.Info(P.Key + ": " + signs + " curve signs (" + lefts.Count + " left and " + rights.Count + " right in the scene) and " + barrels + " burning barrels set at " + taken.Count + " bends");
+		}
+
+		/// <summary>True when lap point <paramref name="i"/> is in the tunnel or within the 14 levelled points at either end of it.</summary>
+		private static bool InTunnel(int i, int n)
+		{
+			if (tunnelFrom < 0)
+			{
+				return false;
+			}
+			int d = ((i - (tunnelFrom - 14)) % n + n) % n;
+			return d <= TunnelLength + 28;
+		}
+
+		/// <summary>
+		/// Whether a curve sign shows the left or the right arrow: by its material (LeftCurveSignTexture, RightCurveSignTexture), since the
+		/// Mountain names some of its right signs plain "CurveSign"; by its name when the material says neither. Null: not a curve sign.
+		/// </summary>
+		private static bool? SignIsLeft(Transform sign)
+		{
+			Renderer r = sign.GetComponent<Renderer>();
+			string material = r != null && r.sharedMaterial != null ? r.sharedMaterial.name : "";
+			if (material.StartsWith("Left"))
+			{
+				return true;
+			}
+			if (material.StartsWith("Right"))
+			{
+				return false;
+			}
+			if (sign.name.StartsWith("Left"))
+			{
+				return true;
+			}
+			if (sign.name.StartsWith("Right"))
+			{
+				return false;
+			}
+			return null;
 		}
 
 		/// <summary>A tall invisible wall just inside the four edges of the terrain: a car that fails a turn near the edge of the map stops there.</summary>

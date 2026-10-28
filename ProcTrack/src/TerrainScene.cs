@@ -273,15 +273,15 @@ TaperSpread = P.TaperSpread,
 
 			// Copies of the old track's hazards are made before anything is hidden, and put on the ground once the terrain is final.
 PlanTransplants(env, layout, oldSamples, oldGround, seed);
-			if (P.Markers)
-			{
-				PlanMarkers(env, layout, oldSamples);
-			}
-
+			// The tunnel is chosen before the markers, so no sign or barrel is put inside it. (It keeps clear of the hazards, not of the markers, so the order does not move it.)
 			tunnelFrom = -1;
 			if (P.Tunnel)
 			{
 				PlanTunnel(layout, seed);
+			}
+			if (P.Markers)
+			{
+				PlanMarkers(env, layout, oldSamples);
 			}
 			if (roadSource != null)
 			{
@@ -317,10 +317,6 @@ if (P.Tunnel)
 if (P.EdgeWall)
 			{
 				BuildEdgeWall(ground);
-			}
-			if (P.HairpinWall)
-			{
-				BuildHairpinWall(layout, source);
 			}
 			if (P.Yard)
 			{
@@ -780,11 +776,12 @@ if (P.EdgeWall)
 						{
 							detail[wheat][j, i] = full[wheat];
 						}
-						else if (grass >= 0 && d >= h + 0.5f && d <= h + 5f)
+						// Grass along both road edges as on the Factory (EdgeGrass): full on the first 7 m, thinning out to 22 m.
+						else if (grass >= 0 && d >= h + 0.5f && d <= h + 22f && Hash(i, j, seed + 77) < (d <= h + 7f ? 1f : 0.55f * (1f - (d - h - 7f) / 15f)))
 						{
 							detail[grass][j, i] = full[grass];
 						}
-						else if (tufts >= 0 && d > h + 5f && d <= h + 30f && Hash(i, j, seed) < 0.05f)
+						else if (tufts >= 0 && d > h + 7f && d <= h + 30f && Hash(i, j, seed) < 0.05f)
 						{
 							detail[tufts][j, i] = full[tufts];
 						}

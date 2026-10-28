@@ -1,6 +1,6 @@
 100% AI generated code
 ============================================================
-PROCEDURAL MAPS  (ProcTrack 1.0.11, for Half Grip Demo 0.418)
+PROCEDURAL MAPS  (ProcTrack 1.0.12, for Half Grip Demo 0.418)
 ============================================================
 
 video showcase
@@ -11,11 +11,13 @@ https://youtu.be/2Q-mIE49L5M
 Race maps that build a brand new track from a seed every race. Every map is
 dealt into normal runs; each one reuses the game's own scene, props and hazards.
 
-  Procedural Circuit   3.2 km tarmac lap built inside the Stadium.
-  Procedural Forest    Wide dirt road through Forest Field, ramps, a hairpin
-                       with trees, fields and the game's tornado.
+  Procedural Circuit   3.2 km tarmac lap built inside the Stadium, eight cars on
+                       the grid, a grandstand along the start straight, and
+                       the Stadium's pit box, bridge and skyline set round it.
+  Procedural Forest    Wide dirt road through Forest Field, a hairpin with
+                       trees, fields and the game's tornado.
   Procedural Mountain  Road across the Winter Mountain crater floor with an
-                       ice tube, a hairpin, ramps.
+                       ice tube, a hairpin, ramps and curve signs.
   Procedural Factory   A long lap that starts straight into the Fire Factory
                        building (the U-turn through the hall, hammers, barrel
                        machine), then runs out to a big loop with the giant
@@ -59,7 +61,7 @@ start. This creates   <game folder>\BepInEx\config\halfgrip.proctrack.cfg
 
 4. SETTINGS (halfgrip.proctrack.cfg, open in Notepad)
 -----------------------------------------------------
-  Forest / Mountain / Factory / Tokyo = true/false   Whether that map is dealt
+  Circuit / Forest / Mountain / Factory / Tokyo = true/false   Whether that map is dealt
         in normal runs (restart the game; room players need the same values).
   SeedOverride = 0      A number here replays that track (solo only).
   RandomWeather = true  Deal a weather from the scene's weathers.
