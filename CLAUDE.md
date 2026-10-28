@@ -41,12 +41,9 @@ The maps are Circuit (in the Stadium), Forest, Mountain, Factory and Tokyo. Curr
 
 ## Checking changes
 
-- Syntax only, works anywhere with the .NET 8 SDK:
-  `dotnet run --project tools/SyntaxCheck -- ProcTrack/src`
 - A full type check needs the game installed (Windows). Use HalfGripTools `tools\check-mods.ps1 -ModsPath <folder holding ProcTrack> -Mod ProcTrack -GameDir "<game folder>"`.
 - To test in game, copy `ProcTrack/` to `<game>\BepInEx\HalfGripMods\`, set `TestMode=true` and `TestMap=<map>` in the cfg, and read `BepInEx\LogOutput.log`.
   `VerboseLog` and `ShowPath` help with debugging.
-- A cloud session has no game DLLs, so it can only check syntax. Say so when you report a change as checked.
 
 ## Working with the owner
 
