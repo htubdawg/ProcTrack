@@ -145,6 +145,14 @@ public float Expand = 1f;
 		public float RingX;
 		public float RingZ;
 		public float RingR;
+		/// <summary>
+		/// The scene's backdrop sprites that close the play area off (the group in the '|' path syntax, and the name prefix of the inner
+		/// ring: Forest Field's TreeLineClose). They stand round it unevenly, so they are read as a polygon, in order of their direction from
+		/// its middle, and the lap is placed with all of its road at least <see cref="BoundaryClear"/> inside it. Null: no such polygon.
+		/// </summary>
+		public string BoundaryGroup;
+		public string BoundaryPrefix;
+		public float BoundaryClear = 30f;
 
 		/// <summary>
 		/// Forest: the old road's paint and grass are wiped and new ones laid, with wheat fields. Off: the terrain's own paint and grass are kept
@@ -225,6 +233,10 @@ Tornado = true,
 			// 300 seeds off line at 1250 m: no plain fallback lap, the longest straight 13 percent of the lap on average and 16 at most.
 			SpanX = 1250.0,
 			SpanZ = 1250.0,
+			// Checked off line against the 0.418 tree lines (normal variant) for 120 seeds: every lap fits inside with the road 30 m clear,
+			// within 13 m of the old track's middle, where placement pulls it anyway.
+			BoundaryGroup = "Decoration|TreeLines",
+			BoundaryPrefix = "TreeLineClose",
 			Wobble = 0.006,
 			Harmonics = 8,
 			AmpCap = 260.0,

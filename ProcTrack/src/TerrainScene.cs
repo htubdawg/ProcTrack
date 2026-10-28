@@ -258,6 +258,7 @@ TaperSpread = P.TaperSpread,
 			shape.MaxSpanZ = P.SpanZ > 0.0 ? Math.Min(P.SpanZ, ground.SizeZ - 2.0 * EdgeMargin) : (P.SpanX > 0.0 ? room : double.NaN);
 			Layout local = Generator.Make(seed, shape);
 			List<Rect> backdrop = Backdrop(env);
+			ReadBoundary(env, ground);
 			Layout layout = Place(local, ground, trees, backdrop, forward, home, out float score);
 			float low = layout.Points.Min(p => p.y);
 			float high = layout.Points.Max(p => p.y);
@@ -467,12 +468,19 @@ if (P.EdgeWall)
 						blocked++;
 					}
 				}
-				foreach (Rect r in backdrop)
+				if (OutsideBoundary(x, z))
 				{
-					if (r.Contains(new Vector2(x, z)))
+					blocked++;
+				}
+				else
+				{
+					foreach (Rect r in backdrop)
 					{
-						blocked++;
-						break;
+						if (r.Contains(new Vector2(x, z)))
+						{
+							blocked++;
+							break;
+						}
 					}
 				}
 				if (i <= ahead || i >= n - behind)
@@ -483,6 +491,94 @@ if (P.EdgeWall)
 			}
 			climb += Math.Abs(first - prev);
 			return P.ClimbWeight * climb + P.AcrossWeight * across + TreeWeight * trees + 2f * (startHigh - startLow) + BackdropWeight * blocked;
+		}
+
+		/// <summary>Cells of <see cref="BoundaryCell"/> metres over the terrain: true where a road point may stand (inside the boundary polygon, clear of its edges). Null: no boundary.</summary>
+		private static bool[,] boundary;
+		private static float boundaryX0, boundaryZ0;
+		private const float BoundaryCell = 10f;
+
+		/// <summary>
+		/// The profile's boundary polygon (see <see cref="MapProfile.BoundaryGroup"/>), from its sprites' middles in order of direction from
+		/// their centre, made into a grid of the cells a road point may stand in: inside it, with the road, its shoulder and BoundaryClear
+		/// between the point and every edge.
+		/// </summary>
+		private static void ReadBoundary(GameObject env, Ground g)
+		{
+			boundary = null;
+			if (P.BoundaryGroup == null)
+			{
+				return;
+			}
+			List<Vector2> corners = new List<Vector2>();
+			foreach (Transform group in FindAll(env.transform, P.BoundaryGroup))
+			{
+				foreach (Transform item in group)
+				{
+					if (item.gameObject.activeInHierarchy && item.name.StartsWith(P.BoundaryPrefix) && item.TryGetComponent(out Renderer r))
+					{
+						corners.Add(new Vector2(r.bounds.center.x, r.bounds.center.z));
+					}
+				}
+			}
+			if (corners.Count < 3)
+			{
+				Mod.Log.LogWarning(P.Key + ": only " + corners.Count + " " + P.BoundaryPrefix + " sprites at " + P.BoundaryGroup + ", the lap is not held inside them.");
+				return;
+			}
+			Vector2 c = Vector2.zero;
+			foreach (Vector2 p in corners)
+			{
+				c += p;
+			}
+			c /= corners.Count;
+			corners.Sort((a, b) => Mathf.Atan2(a.y - c.y, a.x - c.x).CompareTo(Mathf.Atan2(b.y - c.y, b.x - c.x)));
+			float clear = RoadHalfWidth + Shoulder + P.BoundaryClear;
+			int nx = Mathf.CeilToInt(g.SizeX / BoundaryCell) + 1;
+			int nz = Mathf.CeilToInt(g.SizeZ / BoundaryCell) + 1;
+			boundary = new bool[nx, nz];
+			boundaryX0 = g.X0;
+			boundaryZ0 = g.Z0;
+			int open = 0;
+			for (int i = 0; i < nx; i++)
+			{
+				for (int j = 0; j < nz; j++)
+				{
+					Vector2 p = new Vector2(g.X0 + i * BoundaryCell, g.Z0 + j * BoundaryCell);
+					bool inside = false;
+					bool near = false;
+					for (int k = 0, m = corners.Count - 1; k < corners.Count && !near; m = k++)
+					{
+						Vector2 a = corners[k];
+						Vector2 b = corners[m];
+						if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x)
+						{
+							inside = !inside;
+						}
+						Vector2 ab = b - a;
+						float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-3f, ab.sqrMagnitude));
+						near = (a + ab * t - p).magnitude < clear;
+					}
+					boundary[i, j] = inside && !near;
+					if (boundary[i, j])
+					{
+						open++;
+					}
+				}
+			}
+			Mod.Info(P.Key + ": the lap is held inside the polygon of " + corners.Count + " " + P.BoundaryPrefix + " sprites, " + clear.ToString("0") + " m clear of it (" + (open * BoundaryCell * BoundaryCell / 1e6f).ToString("0.00") + " square km to place the road in)");
+		}
+
+		/// <summary>True when a road point at (x, z) would be outside the boundary polygon or too near its edge.</summary>
+		private static bool OutsideBoundary(float x, float z)
+		{
+			if (boundary == null)
+			{
+				return false;
+			}
+			int i = Mathf.RoundToInt((x - boundaryX0) / BoundaryCell);
+			int j = Mathf.RoundToInt((z - boundaryZ0) / BoundaryCell);
+			return i < 0 || j < 0 || i >= boundary.GetLength(0) || j >= boundary.GetLength(1) || !boundary[i, j];
 		}
 
 		/// <summary>The flat extent of everything in the profile's Avoid groups (each tree line sprite, each building), grown by BackdropClear.</summary>
