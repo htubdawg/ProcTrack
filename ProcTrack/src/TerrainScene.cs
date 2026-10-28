@@ -256,13 +256,6 @@ TaperSpread = P.TaperSpread,
 				MaxSpan = P.SpanX > 0.0 ? Math.Min(P.SpanX, ground.SizeX - 2.0 * EdgeMargin) : room
 			};
 			shape.MaxSpanZ = P.SpanZ > 0.0 ? Math.Min(P.SpanZ, ground.SizeZ - 2.0 * EdgeMargin) : (P.SpanX > 0.0 ? room : double.NaN);
-			if (P.RingFrom != null && MeasureRing(env))
-			{
-				// The lap's box must fit in the ring with the road, its shoulder and 20 m to spare all round.
-				double across = 2.0 * (P.RingR - RoadHalfWidth - Shoulder - 20f);
-				shape.MaxSpan = Math.Min(shape.MaxSpan, across * 0.9);
-				shape.MaxSpanZ = Math.Min(double.IsNaN(shape.MaxSpanZ) ? shape.MaxSpan : shape.MaxSpanZ, across * 0.9);
-			}
 			Layout local = Generator.Make(seed, shape);
 			List<Rect> backdrop = Backdrop(env);
 			Layout layout = Place(local, ground, trees, backdrop, forward, home, out float score);
@@ -490,36 +483,6 @@ if (P.EdgeWall)
 			}
 			climb += Math.Abs(first - prev);
 			return P.ClimbWeight * climb + P.AcrossWeight * across + TreeWeight * trees + 2f * (startHigh - startLow) + BackdropWeight * blocked;
-		}
-
-		/// <summary>
-		/// The ring of backdrop sprites round the play area (the profile's RingFrom, those named RingPrefix): its middle is the middle of
-		/// their box, its radius the distance to the nearest of them. False, and no ring, when fewer than three are found.
-		/// </summary>
-		private static bool MeasureRing(GameObject env)
-		{
-			List<Vector3> at = new List<Vector3>();
-			foreach (Transform group in FindAll(env.transform, P.RingFrom))
-			{
-				foreach (Transform item in group)
-				{
-					if (item.gameObject.activeInHierarchy && item.name.StartsWith(P.RingPrefix) && item.TryGetComponent(out Renderer r))
-					{
-						at.Add(r.bounds.center);
-					}
-				}
-			}
-			if (at.Count < 3)
-			{
-				Mod.Log.LogWarning(P.Key + ": only " + at.Count + " backdrop sprites at " + P.RingFrom + ", the lap is not held inside them.");
-				return false;
-			}
-			float minX = at.Min(p => p.x), maxX = at.Max(p => p.x), minZ = at.Min(p => p.z), maxZ = at.Max(p => p.z);
-			P.RingX = (minX + maxX) * 0.5f;
-			P.RingZ = (minZ + maxZ) * 0.5f;
-			P.RingR = at.Min(p => new Vector2(p.x - P.RingX, p.z - P.RingZ).magnitude);
-			Mod.Info(P.Key + ": the lap is held inside the ring of " + at.Count + " " + P.RingPrefix + " sprites round (" + P.RingX.ToString("0") + ", " + P.RingZ.ToString("0") + "), radius " + P.RingR.ToString("0") + " m");
-			return true;
 		}
 
 		/// <summary>The flat extent of everything in the profile's Avoid groups (each tree line sprite, each building), grown by BackdropClear.</summary>
@@ -820,6 +783,16 @@ if (P.EdgeWall)
 							detail[grass][j, i] = full[grass];
 						}
 						else if (tufts >= 0 && d > h + 7f && d <= h + 30f && Hash(i, j, seed) < 0.05f)
+						{
+							detail[tufts][j, i] = full[tufts];
+						}
+						// The open ground beyond: grass in soft patches about 60 m across (the scene's own grass only lined its old road,
+						// so the wiped ground was bare), from bare between patches to full in their middles, and a few tufts.
+						else if (grass >= 0 && d > h + 22f && Hash(i, j, seed + 151) < Mathf.Clamp01(0.4f + 0.75f * Lattice(x / 60f, z / 60f, seed + 313)))
+						{
+							detail[grass][j, i] = full[grass];
+						}
+						else if (tufts >= 0 && d > h + 30f && Hash(i, j, seed) < 0.04f)
 						{
 							detail[tufts][j, i] = full[tufts];
 						}
