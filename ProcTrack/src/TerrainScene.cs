@@ -318,10 +318,6 @@ if (P.EdgeWall)
 			{
 				BuildEdgeWall(ground);
 			}
-			if (P.HairpinWall)
-			{
-				BuildHairpinWall(layout, source);
-			}
 			if (P.Yard)
 			{
 				BuildYard(layout, seed, source);

@@ -102,17 +102,7 @@ uSet = false;
 				List<Transform> sources = new List<Transform>();
 				foreach (Transform t in FindAll(env.transform, tp.Path))
 				{
-					if (tp.Each)
-					{
-						foreach (Transform child in t)
-						{
-							if (child.gameObject.activeSelf)
-							{
-								sources.Add(child);
-							}
-						}
-					}
-					else if (t.gameObject.activeSelf)
+					if (t.gameObject.activeSelf)
 					{
 						sources.Add(t);
 					}
@@ -278,11 +268,8 @@ if (tp.CentreOnRoad && PrincipalAxis(items[0], out Vector3 axis))
 				Vector3 p = c + Vector3.Scale(e, new Vector3((corner & 1) == 0 ? -1f : 1f, (corner & 2) == 0 ? -1f : 1f, (corner & 4) == 0 ? -1f : 1f));
 				alongHalf = Math.Max(alongHalf, Math.Abs(Vector3.Dot(p - c, fOld)));
 			}
+			// Carried at its own size (only the hall's U-turn fit, in CarryTurn, scales).
 			float scale = 1f;
-			if (tp.MaxHalf > 0f && alongHalf > tp.MaxHalf)
-			{
-				scale = Mathf.Max(tp.MinScale, tp.MaxHalf / alongHalf);
-			}
 			int half = tp.OnRoad ? Mathf.Clamp(Mathf.CeilToInt((alongHalf * scale + 15f) / layout.Step), 6, 45) : 8;
 
 			int lo = ahead + half + 10;

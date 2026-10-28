@@ -6,7 +6,7 @@ namespace HalfGripProcTrack
 {
 	/// <summary>
 	/// Race maps that are built from a seed each time a race loads: a start straight and a random run of corners. The circuit, a 3.2 km
-	/// tarmac lap, is built from code inside the Stadium scene; the forest, mountain, factory and Tokyo laps (about 2.7 to 2.9 km) are cut
+	/// tarmac lap, is built from code inside the Stadium scene; the forest, mountain, factory and Tokyo laps (about 2.7 to 3.4 km) are cut
 	/// into the terrain of the game's own scene of that name. Like the Highway mod they have no scene of their own, and are added to the
 	/// run map's pool.
 	///
@@ -59,7 +59,7 @@ namespace HalfGripProcTrack
 			Profiles.Factory.Enabled = () => factory.Value;
 			Profiles.Tokyo.Enabled = () => tokyo.Value;
 			SeedOverride = ctx.Config.Bind("Map", "SeedOverride", 0, "Solo only: build the lap from this seed instead of a random one, to replay a track (the seed is written on the sign over the start line and in the log). 0 means not set (a new random seed every race). Ignored in a Multiplayer room, where the host's seed is used.");
-			RandomWeather = ctx.Config.Bind("Map", "RandomWeather", true, "Each race on a procedural map is dealt one of the weathers the game has for that scene (the forest: rainy day, rainy night, red ash; the mountain: day, snowy night; the factory: fire, night; the circuit: clear, ash, rainy night). Chosen from the seed, so everyone in a room gets the same. Off, each map keeps the weather it was made with.");
+			RandomWeather = ctx.Config.Bind("Map", "RandomWeather", true, "Each race on a procedural map is dealt one of the weathers the game has for that scene (the forest: rainy day, rainy night, red ash; the mountain: day, snowy night; the factory: fire, night; the circuit: clear, ash, rainy night; Tokyo has only its neon night, so it keeps it). Chosen from the seed, so everyone in a room gets the same. Off, each map keeps the weather it was made with.");
 			BenchmarkFactor = ctx.Config.Bind("Map", "BenchmarkFactor", 0.9f, "Time objectives (\"finish under X s\") are Stadium's times scaled by lap length times this. Lower is harder. Tune it from your own times. Changes only your own objectives.");
 			ShowBoard = ctx.Config.Bind("Map", "ShowBoard", true, "Put a sign with the seed over the start line.");
 			Verbose = ctx.Config.Bind("Debug", "VerboseLog", false, "Write the detailed build log (hall fit, spinner, walls, grass, ...) to the BepInEx log. Off, only each race's seed, warnings and errors are logged.");
