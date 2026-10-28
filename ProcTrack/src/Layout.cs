@@ -72,6 +72,11 @@ namespace HalfGripProcTrack
 		public double BackStraight = 0.0;
 		/// <summary>True: the lap is never mirrored, so its corners all turn left.</summary>
 		public bool NoMirror = false;
+		/// <summary>
+		/// Above 0: only the last this many metres of the start straight are kept dead straight (the grid behind the line and the start;
+		/// the line is 90 before the straight's end), and the rest of it bends like the lap. 0: the whole start straight is kept.
+		/// </summary>
+		public double StraightKeep = 0.0;
 
 		/// <summary>Humps in the lap's edge: a stretch pushed out sideways by up to Height and back again over Width metres.</summary>
 		public Bump[] Bumps;
@@ -306,7 +311,10 @@ double x, z, nx, nz;
 					{
 						BasePoint(s, straight, radius, out x, out z, out nx, out nz);
 					}
-double dist = s <= lead ? 0.0 : Math.Min(s - lead, shape.Length - s);
+						// Distance along the lap from the stretch kept dead straight: the whole start straight, or with StraightKeep only its last
+						// StraightKeep metres (the grid and the start line), so the rest of it bends like the lap.
+						double keepFrom = shape.StraightKeep > 0.0 ? Math.Max(0.0, lead - shape.StraightKeep) : 0.0;
+						double dist = s <= lead ? Math.Max(0.0, keepFrom - s) : Math.Min(s - lead, shape.Length - s + keepFrom);
 					double window = DetMath.Smooth(dist / 200.0);
 					if (shape.BackStraight > 0.0)
 					{
@@ -317,7 +325,14 @@ window *= DetMath.Smooth(outside / 150.0);
 					if (tear)
 					{
 						// The hairpin keeps its shape: no wobble on it, and the wobble comes in over 250 m beyond it.
-double fromHairpin = Math.Max(0.0, Math.Abs(s - hairpinMid) - r2 * a2 * 0.5 - (lolli ? 450.0 : 0.0));
+						// Measured round the loop when the start straight bends (StraightKeep): it begins where the teardrop's hairpin ends. Without
+						// it the start straight never bends, and the straight measure is kept so every other map's laps stay as they were.
+						double fromMid = Math.Abs(s - hairpinMid);
+						if (shape.StraightKeep > 0.0)
+						{
+							fromMid = Math.Min(fromMid, shape.Length - fromMid);
+						}
+						double fromHairpin = Math.Max(0.0, fromMid - r2 * a2 * 0.5 - (lolli ? 450.0 : 0.0));
 						window *= DetMath.Smooth(fromHairpin / 250.0);
 					}
 					double d = 0.0;
