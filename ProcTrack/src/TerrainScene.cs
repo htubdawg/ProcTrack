@@ -107,20 +107,28 @@ namespace HalfGripProcTrack
 				clone = null;
 			}
 
-			MapProfile profile = Profiles.For(RunState.ActiveMap);
+MapProfile profile = Profiles.For(RunState.ActiveMap);
 			if (profile == null)
 			{
+				if (RunState.ActiveMap != null && RunState.ActiveMap.name != null && RunState.ActiveMap.name.StartsWith("Proc"))
+				{
+					Mod.Log.LogInfo("Scene " + scene.name + " loaded with run map " + RunState.ActiveMap.name + " (not a terrain map of ours).");
+				}
 				return;
 			}
-			TrackManager tm = UnityEngine.Object.FindFirstObjectByType<TrackManager>();
+TrackManager tm = UnityEngine.Object.FindFirstObjectByType<TrackManager>();
 			if (tm == null || tm.playerCarController == null || tm.lapManager == null || tm.lapManager.trackLine == null)
 			{
+				Mod.Log.LogWarning(profile.Key + ": scene " + scene.name + " loaded but its race objects are not ready (track manager " + (tm == null ? "missing" : "found") + (tm != null ? ", car " + (tm.playerCarController != null) + ", laps " + (tm.lapManager != null) + ", line " + (tm.lapManager != null && tm.lapManager.trackLine != null) : "") + "): the map is not built.");
 				return;
 			}
 			P = profile;
+			Mod.Log.LogInfo(profile.Key + ": building in scene " + scene.name + "...");
+			System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
 			try
 			{
 				Build(scene, tm);
+				Mod.Log.LogInfo(profile.Key + ": built in " + clock.ElapsedMilliseconds + " ms");
 			}
 			catch (Exception e)
 			{

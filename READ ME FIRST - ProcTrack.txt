@@ -1,4 +1,4 @@
-PROCEDURAL MAPS  (ProcTrack 1.0.1, for Half Grip Demo 0.418)
+PROCEDURAL MAPS  (ProcTrack 1.0.11, for Half Grip Demo 0.418)
 ============================================================
 
 Race maps that build a brand new track from a seed every race. Every map is

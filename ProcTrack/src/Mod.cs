@@ -64,6 +64,10 @@ namespace HalfGripProcTrack
 			MapEntry.Ensure();
 			ctx.OnSceneLoaded(scene =>
 			{
+				if (scene.name == "SCENE_UI_MAIN_MENU")
+				{
+					MultiplayerLeave.Clear();
+				}
 				MapEntry.Ensure();
 				CircuitScene.OnSceneLoaded(scene);
 				TerrainScene.OnSceneLoaded(scene);
