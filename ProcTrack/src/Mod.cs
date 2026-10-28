@@ -39,6 +39,9 @@ namespace HalfGripProcTrack
 		/// <summary>The circuit's map entry in the run config, once it exists.</summary>
 		internal static MapDefinition Map;
 
+		/// <summary>The setting that adds the circuit to the pool.</summary>
+		internal static ConfigEntry<bool> Circuit;
+
 		public override void Load(ModContext ctx)
 		{
 			Log = ctx.Log;
@@ -46,6 +49,7 @@ namespace HalfGripProcTrack
 
 			TestMode = ctx.Config.Bind("Map", "TestMode", false, "Every race you start is on the map TestMap names, whatever the run map says. For trying it out. Off, the maps are dealt like any other map.");
 			TestMap = ctx.Config.Bind("Map", "TestMap", "Forest", new ConfigDescription("The map TestMode puts every race on.", new AcceptableValueList<string>("Forest", "Mountain", "Factory", "Tokyo", "Circuit")));
+			Circuit = ctx.Config.Bind("Map", "Circuit", true, "Add the circuit (a tarmac lap in the Stadium) to the run map's pool. In a Multiplayer room every player needs the same setting. Read at game start.");
 			ConfigEntry<bool> forest = ctx.Config.Bind("Map", "Forest", true, "Add the forest lap to the run map's pool. In a Multiplayer room every player needs the same setting. Read at game start.");
 			ConfigEntry<bool> mountain = ctx.Config.Bind("Map", "Mountain", true, "Add the mountain lap (a road across the crater floor of the Winter Mountain) to the run map's pool. New in 0.3.0. In a Multiplayer room every player needs the same setting. Read at game start.");
 			ConfigEntry<bool> factory = ctx.Config.Bind("Map", "Factory", true, "Add the factory lap (a road across the Fire Factory's dirt basin) to the run map's pool. New in 0.3.0. In a Multiplayer room every player needs the same setting. Read at game start.");

@@ -13,7 +13,7 @@ namespace HalfGripProcTrack
 	/// any Start, so the lap counter, the grid, the hazards and the reset logic all find the new track. The method is the Highway mod's
 	/// (hide Stadium's ground and track, build meshes, swap the track line, move the grid), without its stacked roads.
 	/// </summary>
-	internal static class CircuitScene
+	internal static partial class CircuitScene
 	{
 		private static PathManager path;
 		private static GameObject root;
@@ -42,15 +42,20 @@ namespace HalfGripProcTrack
 			TrackManager tm = UnityEngine.Object.FindFirstObjectByType<TrackManager>();
 			if (tm == null || tm.playerCarController == null || tm.lapManager == null || tm.lapManager.trackLine == null)
 			{
+				Mod.Log.LogWarning("Circuit: scene " + scene.name + " loaded but its race objects are not ready (track manager " + (tm == null ? "missing" : "found") + (tm != null ? ", car " + (tm.playerCarController != null) + ", laps " + (tm.lapManager != null) + ", line " + (tm.lapManager != null && tm.lapManager.trackLine != null) : "") + "): the map is not built.");
 				return;
 			}
+			Mod.Log.LogInfo("Circuit: building in scene " + scene.name + "...");
+			System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
 			try
 			{
 				Build(scene, tm);
+				Mod.Log.LogInfo("Circuit: built in " + clock.ElapsedMilliseconds + " ms");
 			}
 			catch (Exception e)
 			{
-				Mod.Log.LogError("The procedural circuit could not be built: " + e);
+				Mod.Log.LogError("The procedural circuit could not be built, the scene is put back as it was: " + e);
+				Unload();
 			}
 		}
 
@@ -89,6 +94,19 @@ namespace HalfGripProcTrack
 			Transform ground = env.transform.Find("Ground");
 			int layer = ground != null ? ground.gameObject.layer : 0;
 			Material source = ground != null && ground.TryGetComponent(out MeshRenderer groundRenderer) ? groundRenderer.sharedMaterial : null;
+			// Read before the lap replaces it: the Stadium's buildings are set round the new lap by where they stood to this one.
+			List<Vector3> oldLine = new List<Vector3>(tm.lapManager.trackLine.sampledPoints ?? new List<Vector3>());
+
+			int seed = SeedSource.Resolve(out string label);
+			SeedSource.Forget();
+			DateTime started = DateTime.UtcNow;
+			Layout layout = Generator.Make(seed);
+			Mod.Log.LogInfo("Circuit seed " + seed + " (" + label + "): lap " + layout.Length.ToString("0") + ", tightest corner radius " + (layout.Fallback ? "n/a (plain shape)" : layout.MinRadius.ToString("0")) + ", drawn on try " + (layout.Attempt + 1) + ", generated in " + (DateTime.UtcNow - started).TotalMilliseconds.ToString("0") + " ms");
+
+			root = new GameObject("ProcCircuit");
+			// Copied while the Stadium's objects are still switched on: a switched off renderer has no bounds to measure.
+			GameObject road = BuildStadiumRoad(env, layout, Generator.RoadHalfWidth);
+			CarryStadium(env, layout, oldLine, Generator.RoadHalfWidth);
 
 			foreach (string name in new[] { "Ground", "Track", "Decoration/Outside", "Decoration/Bridge", "Decoration/TowerDamaged" })
 			{
@@ -105,18 +123,12 @@ namespace HalfGripProcTrack
 				rainPlane.enabled = false;
 			}
 
-			int seed = SeedSource.Resolve(out string label);
-			SeedSource.Forget();
-			DateTime started = DateTime.UtcNow;
-			Layout layout = Generator.Make(seed);
-			Mod.Log.LogInfo("Circuit seed " + seed + " (" + label + "): lap " + layout.Length.ToString("0") + ", tightest corner radius " + (layout.Fallback ? "n/a (plain shape)" : layout.MinRadius.ToString("0")) + ", drawn on try " + (layout.Attempt + 1) + ", generated in " + (DateTime.UtcNow - started).TotalMilliseconds.ToString("0") + " ms");
-
-			root = new GameObject("ProcCircuit");
 			int meshes = 0;
 			int triangles = 0;
 			foreach (Batch batch in BuildBatches(layout, seed))
 			{
-				if (batch.Count == 0)
+				// The Stadium's own road object carries the tarmac when it was found.
+				if (batch.Count == 0 || (road != null && batch.Name == "asphalt"))
 				{
 					continue;
 				}
@@ -151,6 +163,7 @@ namespace HalfGripProcTrack
 				triangles += mesh.triangles.Length / 3;
 			}
 			Mod.Info("Circuit built: " + meshes + " meshes, " + triangles + " triangles");
+			BuildGrandstand(layout, Generator.RoadHalfWidth, layer, source);
 
 			if (Mod.ShowBoard.Value)
 			{
@@ -455,33 +468,50 @@ float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
 			Mod.Info("Circuit track line: " + control.Count + " control points, " + line.sampledPoints.Count + " samples, " + line.trackLength.ToString("0") + " m, " + line.lanes.Count + " lanes");
 		}
 
-		/// <summary>The grid goes on the start straight, behind the line, heading +X as Stadium's own grid does, so no slot has to be turned.</summary>
+		/// <summary>Rivals on the circuit: the Stadium has five grid slots, the Factory and Tokyo seven, so two are added to make the same field.</summary>
+		private const int Rivals = 7;
+
+		/// <summary>
+		/// The grid goes on the start straight, behind the line, heading +X as Stadium's own grid does, so no slot has to be turned. The
+		/// rivals are spawned one per slot in TrackManager's own list (read in its Awake, spawned in its Start, and this runs between),
+		/// so the added slots go into that list.
+		/// </summary>
 		private static void PlaceGrid(TrackManager tm, GameObject env, Layout layout)
 		{
 			float h = Generator.RoadHalfWidth;
 			Transform container = tm.startingPositionsContainer.transform;
-			Transform playerSlot = container.Cast<Transform>().FirstOrDefault(t => t.name == "PlayerPosition");
+			Transform playerSlot = Traverse.Create(tm).Field("playerStart").GetValue<Transform>() ?? container.Cast<Transform>().FirstOrDefault(t => t.name == "PlayerPosition");
 			CarControllerNew car = tm.playerCarController;
-			float lift = playerSlot != null ? car.transform.position.y - playerSlot.position.y : 0.5f;
+			float lift = playerSlot != null ? Mathf.Clamp(car.transform.position.y - playerSlot.position.y, 0.2f, 3f) : 0.5f;
+
+			List<Transform> slots = Traverse.Create(tm).Field("startPositions").GetValue<List<Transform>>();
+			if (slots == null)
+			{
+				Mod.Log.LogWarning("TrackManager has no startPositions list: the circuit keeps the Stadium's grid size.");
+				slots = container.Cast<Transform>().Where(t => t != playerSlot && t.gameObject.activeInHierarchy).ToList();
+			}
+			else if (slots.Count > 0)
+			{
+				while (slots.Count < Rivals)
+				{
+					// A copy of a slot brings its painted grid marker along.
+					GameObject added = UnityEngine.Object.Instantiate(slots[0].gameObject, container);
+					added.name = (slots.Count + 1).ToString();
+					added.SetActive(true);
+					slots.Add(added.transform);
+				}
+			}
 
 			float laneRight = -h * 0.35f;   // heading +X, right is -Z
 			float laneLeft = h * 0.35f;
-			int n = 0;
-			foreach (Transform slot in container.Cast<Transform>().ToList())
+			for (int k = 0; k < slots.Count; k++)
 			{
-				if (slot == playerSlot)
-				{
-					continue;
-				}
-				if (n >= 5)
-				{
-					slot.gameObject.SetActive(false);
-					continue;
-				}
-				slot.position = new Vector3(-30f * (n + 1), 0f, n % 2 == 0 ? laneRight : laneLeft);
-				n++;
+				slots[k].position = new Vector3(-30f * (k + 1), 0f, k % 2 == 0 ? laneRight : laneLeft);
 			}
-			Vector3 playerAt = new Vector3(-30f * 6f, 0f, laneLeft);
+			// The straight behind the line is at least 290 m: eight cars 30 m apart fit.
+			int row = slots.Count + 1;
+			Vector3 playerAt = new Vector3(-30f * row, 0f, row % 2 == 1 ? laneRight : laneLeft);
+			Mod.Info("Circuit grid: " + slots.Count + " rivals, the player " + (30f * row).ToString("0") + " m behind the line");
 			if (playerSlot != null)
 			{
 				playerSlot.position = playerAt;

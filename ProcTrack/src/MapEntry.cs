@@ -45,7 +45,8 @@ namespace HalfGripProcTrack
 					AddWeathers(config, circuitWeathers, HostTrack, Mod.Map);
 					Mod.Info("Procedural circuit map made from " + source.name + " (host track " + HostTrack + ", benchmark " + Mod.Map.timeEarly.ToString("0") + "/" + Mod.Map.timeMid.ToString("0") + "/" + Mod.Map.timeLate.ToString("0") + " s)");
 				}
-				if (!config.maps.Contains(Mod.Map))
+				// Made either way, so TestMode can still put races on it; only added to the pool when the setting is on.
+				if (Mod.Circuit.Value && !config.maps.Contains(Mod.Map))
 				{
 					config.maps.Add(Mod.Map);
 					Mod.Info("Procedural circuit added to the run config (" + config.maps.Count + " maps)");
