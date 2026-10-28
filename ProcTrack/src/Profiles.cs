@@ -74,6 +74,8 @@ namespace HalfGripProcTrack
 		public double BackStraight = 0.0;
 		/// <summary>True: the lap always turns left (the old road's U-turn that is carried over turns left and cannot be mirrored).</summary>
 		public bool NoMirror;
+		/// <summary>Above 0: only the last this many metres of the start straight are kept dead straight (see <see cref="Shape.StraightKeep"/>). 0: all of it.</summary>
+		public double StraightKeep;
 		/// <summary>True: an S-curved tunnel is built over a bendy stretch of the lap, from the cave's material.</summary>
 		public bool Tunnel;
 /// <summary>
@@ -196,7 +198,7 @@ public float Expand = 1f;
 			SourceMap = "ForestRed",
 			SourcePrefix = "Forest",
 			TrackId = 22,
-			Lap = 2700.0,
+			Lap = 3200.0,
 			SourceLap = 2690f,
 			Half = 40f,
 			StraightMin = 320.0,
@@ -217,6 +219,18 @@ Tornado = true,
 			Taper = 0.2,
 			MinRadius = 70.0,
 			Separation = 150.0,
+			// Bendier than the circuit's waves, two humps on the back half (in or out by the seed), and only the grid's 330 m of the
+			// start straight kept straight: the teardrop's start straight alone was over a quarter of the lap. Checked over 300 seeds
+			// off line: no plain fallback lap, the longest straight 11 percent of the lap on average and 13 at most.
+			Wobble = 0.005,
+			Harmonics = 8,
+			AmpCap = 260.0,
+			StraightKeep = 330.0,
+			Bumps = new[]
+			{
+				new Shape.Bump { At = 200.0, Width = 480.0, Height = 110.0, From = 1, Flip = true },
+				new Shape.Bump { At = -420.0, Width = 520.0, Height = 120.0, From = 1, Flip = true }
+			},
 			HairpinTrees = true,
 			Roughness = 5f,
 			RoughWave = 300f
