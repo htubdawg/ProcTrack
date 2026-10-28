@@ -31,7 +31,8 @@ namespace HalfGripProcTrack
 			if (signed)
 			{
 				// The sign is a thin board whose face points along its local X (src.right). The old one faced along its road one way or the other;
-				// the copy is turned to face along the new road the other way round, which shows its arrow mirrored (PlanMarkers picks for that).
+				// the copy is turned to face along the new road the same way, so drivers see its front as they did the old one's. (Turned the
+				// other way round, they saw its back, and the arrow read mirrored from behind.)
 				int m = 0;
 				float best = float.MaxValue;
 				for (int i = 0; i < oldRoad.Count; i++)
@@ -48,7 +49,7 @@ namespace HalfGripProcTrack
 				float sgn = Vector3.Dot(right, t) >= 0f ? 1f : -1f;
 				if (right.sqrMagnitude > 1e-4f)
 				{
-					turn = Quaternion.AngleAxis(Vector3.SignedAngle(right,faceAlong * -sgn, Vector3.up), Vector3.up);
+					turn = Quaternion.AngleAxis(Vector3.SignedAngle(right, faceAlong * sgn, Vector3.up), Vector3.up);
 				}
 			}
 			GameObject clone = UnityEngine.Object.Instantiate(src.gameObject, pen, false);
@@ -146,13 +147,11 @@ namespace HalfGripProcTrack
 				taken.Add(c);
 				bool left = sum[c] > 0f;
 				float outside = left ? 1f : -1f;
-				// Turned to the new road as Mark turns it, a copy shows its arrow mirrored from the driver's seat (seen in game on the Factory:
-				// a left sign at a left bend pointed right). So a left bend takes a right sign, whose arrow then reads left. It still stands on
-				// the outside of the bend, as the game's own signs do.
-				List<Transform> pool = left ? rights : lefts;
+				// A left sign for a left bend, on the outside of the bend, as the game's own signs stand.
+				List<Transform> pool = left ? lefts : rights;
 				if (pool.Count == 0)
 				{
-					pool = left ? lefts : rights;
+					pool = left ? rights : lefts;
 				}
 				int before = ((c - Mathf.RoundToInt(70f / layout.Step)) % n + n) % n;
 				if (pool.Count > 0 && before > ahead + 4 && !InTunnel(before, n))
