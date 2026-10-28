@@ -153,6 +153,12 @@ public float Expand = 1f;
 		public string BoundaryGroup;
 		public string BoundaryPrefix;
 		public float BoundaryClear = 30f;
+		/// <summary>
+		/// Above 0: a belt of the scene's own trees this many metres deep along the inside of the boundary polygon, kept clear of the road
+		/// and the fields. The backdrop sprites hang high (built to be seen from far away); from a road near them, these trees hide the
+		/// ground under them.
+		/// </summary>
+		public float BoundaryBelt;
 
 		/// <summary>
 		/// Forest: the old road's paint and grass are wiped and new ones laid, with wheat fields. Off: the terrain's own paint and grass are kept
@@ -233,10 +239,16 @@ Tornado = true,
 			// 300 seeds off line at 1250 m: no plain fallback lap, the longest straight 13 percent of the lap on average and 16 at most.
 			SpanX = 1250.0,
 			SpanZ = 1250.0,
-			// Checked off line against the 0.418 tree lines (normal variant) for 120 seeds: every lap fits inside with the road 30 m clear,
-			// within 13 m of the old track's middle, where placement pulls it anyway.
+			// The road's middle at least 100 m inside the tree lines (40 + 4 + 56): the most every lap fits at, checked off line against the
+			// 0.418 tree lines (normal variant) for 60 seeds. The old track kept 295 m from them, which no 2.7 km teardrop fits; so a belt of
+			// trees along their inside hides the ground under the backdrop sprites, which hang high.
 			BoundaryGroup = "Decoration|TreeLines",
 			BoundaryPrefix = "TreeLineClose",
+			BoundaryClear = 56f,
+			BoundaryBelt = 90f,
+			// Banks up to 90 m wide (the Mountain's 85): a 40 m cut into the hills at the edge, where the hairpin often goes, is a slope of
+			// about 24 degrees, not a 45 m wide cliff.
+			MaxBank = 90f,
 			Wobble = 0.006,
 			Harmonics = 8,
 			AmpCap = 260.0,

@@ -496,6 +496,8 @@ if (P.EdgeWall)
 		/// <summary>Cells of <see cref="BoundaryCell"/> metres over the terrain: true where a road point may stand (inside the boundary polygon, clear of its edges). Null: no boundary.</summary>
 		private static bool[,] boundary;
 		private static float boundaryX0, boundaryZ0;
+		/// <summary>The boundary polygon's corners, in order round it; null with no boundary.</summary>
+		private static List<Vector2> boundaryCorners;
 		private const float BoundaryCell = 10f;
 
 		/// <summary>
@@ -506,6 +508,7 @@ if (P.EdgeWall)
 		private static void ReadBoundary(GameObject env, Ground g)
 		{
 			boundary = null;
+			boundaryCorners = null;
 			if (P.BoundaryGroup == null)
 			{
 				return;
@@ -533,6 +536,7 @@ if (P.EdgeWall)
 			}
 			c /= corners.Count;
 			corners.Sort((a, b) => Mathf.Atan2(a.y - c.y, a.x - c.x).CompareTo(Mathf.Atan2(b.y - c.y, b.x - c.x)));
+			boundaryCorners = corners;
 			float clear = RoadHalfWidth + Shoulder + P.BoundaryClear;
 			int nx = Mathf.CeilToInt(g.SizeX / BoundaryCell) + 1;
 			int nz = Mathf.CeilToInt(g.SizeZ / BoundaryCell) + 1;
@@ -1036,6 +1040,10 @@ if (P.RoadsideTrees > 0f)
 			{
 				AddHairpinTrees(kept, trees, cut, layout, seed);
 			}
+			if (P.BoundaryBelt > 0f && boundaryCorners != null)
+			{
+				AddBoundaryBelt(kept, trees, cut, near, fields, seed);
+			}
 			data.treeInstances = kept.ToArray();
 			Mod.Info(P.Key + ": " + fields.Count + " wheat fields, " + removed + " trees taken out, " + moved + " moved to the new ground, " + kept.Count + " left");
 		}
@@ -1112,6 +1120,82 @@ if (P.RoadsideTrees > 0f)
 				}
 			}
 			return true;
+		}
+
+		/// <summary>
+		/// The belt of trees along the inside of the boundary polygon (<see cref="MapProfile.BoundaryBelt"/> deep): on a 15 m grid, each
+		/// spot jittered and taken about half the time, a copy of one of the scene's own trees. Kept clear of the road (its edge plus
+		/// TreeClear and 10 m), of the fields, and of the terrain's edge.
+		/// </summary>
+		private static void AddBoundaryBelt(List<TreeInstance> kept, TreeInstance[] original, Ground cut, Field road, List<Patch> fields, int seed)
+		{
+			if (original.Length == 0)
+			{
+				return;
+			}
+			Rng rng;
+			unchecked
+			{
+				rng = new Rng((ulong)(uint)seed ^ 0xBE17UL);
+			}
+			const float spacing = 15f;
+			float depth = P.BoundaryBelt;
+			float clear = RoadHalfWidth + TreeClear + 10f;
+			float minX = boundaryCorners.Min(p => p.x), maxX = boundaryCorners.Max(p => p.x);
+			float minZ = boundaryCorners.Min(p => p.y), maxZ = boundaryCorners.Max(p => p.y);
+			int added = 0;
+			for (float x = minX; x <= maxX; x += spacing)
+			{
+				for (float z = minZ; z <= maxZ; z += spacing)
+				{
+					// Every spot makes the same six draws, so what one spot finds never changes what the next one draws.
+					float px = x + (float)rng.Range(-6.0, 6.0);
+					float pz = z + (float)rng.Range(-6.0, 6.0);
+					bool take = rng.Next() < 0.55;
+					int template = (int)(rng.Next() * original.Length);
+					float scale = (float)rng.Range(0.85, 1.3);
+					float rotation = (float)rng.Range(0.0, 6.2831853);
+					if (!take || px < cut.X0 + 30f || px > cut.X0 + cut.SizeX - 30f || pz < cut.Z0 + 30f || pz > cut.Z0 + cut.SizeZ - 30f)
+					{
+						continue;
+					}
+					float edge = EdgeDistance(boundaryCorners, px, pz, out bool inside);
+					if (!inside || edge > depth || road.DistAt(px, pz) < clear || InAny(fields, px, pz, 4f))
+					{
+						continue;
+					}
+					TreeInstance tree = original[template];
+					float y = cut.At(px, pz);
+					tree.position = new Vector3((px - cut.X0) / cut.SizeX, Mathf.Clamp01((y - cut.Y0) / cut.SizeY), (pz - cut.Z0) / cut.SizeZ);
+					tree.widthScale *= scale;
+					tree.heightScale *= scale;
+					tree.rotation = rotation;
+					kept.Add(tree);
+					added++;
+				}
+			}
+			Mod.Info(P.Key + ": " + added + " trees in a belt " + depth.ToString("0") + " m deep along the inside of the " + P.BoundaryPrefix + " polygon");
+		}
+
+		/// <summary>The distance from (x, z) to the nearest edge of the polygon, and whether the point is inside it.</summary>
+		private static float EdgeDistance(List<Vector2> corners, float x, float z, out bool inside)
+		{
+			inside = false;
+			float best = float.MaxValue;
+			Vector2 p = new Vector2(x, z);
+			for (int k = 0, m = corners.Count - 1; k < corners.Count; m = k++)
+			{
+				Vector2 a = corners[k];
+				Vector2 b = corners[m];
+				if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x)
+				{
+					inside = !inside;
+				}
+				Vector2 ab = b - a;
+				float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-3f, ab.sqrMagnitude));
+				best = Math.Min(best, (a + ab * t - p).magnitude);
+			}
+			return best;
 		}
 
 		private static bool InAny(List<Patch> fields, float x, float z, float pad)
