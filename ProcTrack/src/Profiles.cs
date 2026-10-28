@@ -146,12 +146,13 @@ public float Expand = 1f;
 		public float RingZ;
 		public float RingR;
 		/// <summary>
-		/// The group (in the '|' path syntax) of the scene's backdrop sprites that ring the play area, and the name prefix of the inner ones
-		/// (Forest Field's TreeLineClose). When set, the ring is measured from them at load (see <see cref="RingX"/>), and the lap is drawn
-		/// small enough to fit inside it. Null: the ring, if any, is the one given above.
+		/// The scene's backdrop sprites that close the play area off (the group in the '|' path syntax, and the name prefix of the inner
+		/// ring: Forest Field's TreeLineClose). They stand round it unevenly, so they are read as a polygon, in order of their direction from
+		/// its middle, and the lap is placed with all of its road at least <see cref="BoundaryClear"/> inside it. Null: no such polygon.
 		/// </summary>
-		public string RingFrom;
-		public string RingPrefix;
+		public string BoundaryGroup;
+		public string BoundaryPrefix;
+		public float BoundaryClear = 30f;
 
 		/// <summary>
 		/// Forest: the old road's paint and grass are wiped and new ones laid, with wheat fields. Off: the terrain's own paint and grass are kept
@@ -215,8 +216,6 @@ public float Expand = 1f;
 			HideChildren = new[] { "TrackArena2" },
 			InWay = new[] { "Decoration" },
 			Avoid = new[] { "Decoration|TreeLines" },
-			RingFrom = "Decoration|TreeLines",
-			RingPrefix = "TreeLineClose",
 			Rebuild = true,
 			BaseLayer = "NewLayer",
 			RoadLayer = "ForrestRoadTexture",
@@ -229,9 +228,15 @@ Tornado = true,
 			MinRadius = 70.0,
 			Separation = 150.0,
 			// Bendier than the circuit's waves, two humps on the back half (in or out by the seed), and only the grid's 330 m of the
-			// start straight kept straight: the teardrop's start straight alone was over a quarter of the lap. 2.7 km, so the lap fits
-			// inside the ring of tree lines (RingFrom; a 3.2 km lap needs about 1450 m across). Checked over 300 seeds off line, held to
-			// 1250 m across: no plain fallback lap, the longest straight 13 percent of the lap on average and 16 at most.
+			// start straight kept straight: the teardrop's start straight alone was over a quarter of the lap. 2.7 km and at most 1250 m
+			// across (SpanX, SpanZ), about the width the old 2.7 km laps had, so the lap stays inside the backdrop tree lines. Checked over
+			// 300 seeds off line at 1250 m: no plain fallback lap, the longest straight 13 percent of the lap on average and 16 at most.
+			SpanX = 1250.0,
+			SpanZ = 1250.0,
+			// Checked off line against the 0.418 tree lines (normal variant) for 120 seeds: every lap fits inside with the road 30 m clear,
+			// within 13 m of the old track's middle, where placement pulls it anyway.
+			BoundaryGroup = "Decoration|TreeLines",
+			BoundaryPrefix = "TreeLineClose",
 			Wobble = 0.006,
 			Harmonics = 8,
 			AmpCap = 260.0,

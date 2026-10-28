@@ -256,15 +256,9 @@ TaperSpread = P.TaperSpread,
 				MaxSpan = P.SpanX > 0.0 ? Math.Min(P.SpanX, ground.SizeX - 2.0 * EdgeMargin) : room
 			};
 			shape.MaxSpanZ = P.SpanZ > 0.0 ? Math.Min(P.SpanZ, ground.SizeZ - 2.0 * EdgeMargin) : (P.SpanX > 0.0 ? room : double.NaN);
-			if (P.RingFrom != null && MeasureRing(env))
-			{
-				// The lap's box must fit in the ring with the road, its shoulder and 20 m to spare all round.
-				double across = 2.0 * (P.RingR - RoadHalfWidth - Shoulder - 20f);
-				shape.MaxSpan = Math.Min(shape.MaxSpan, across * 0.9);
-				shape.MaxSpanZ = Math.Min(double.IsNaN(shape.MaxSpanZ) ? shape.MaxSpan : shape.MaxSpanZ, across * 0.9);
-			}
 			Layout local = Generator.Make(seed, shape);
 			List<Rect> backdrop = Backdrop(env);
+			ReadBoundary(env, ground);
 			Layout layout = Place(local, ground, trees, backdrop, forward, home, out float score);
 			float low = layout.Points.Min(p => p.y);
 			float high = layout.Points.Max(p => p.y);
@@ -474,12 +468,19 @@ if (P.EdgeWall)
 						blocked++;
 					}
 				}
-				foreach (Rect r in backdrop)
+				if (OutsideBoundary(x, z))
 				{
-					if (r.Contains(new Vector2(x, z)))
+					blocked++;
+				}
+				else
+				{
+					foreach (Rect r in backdrop)
 					{
-						blocked++;
-						break;
+						if (r.Contains(new Vector2(x, z)))
+						{
+							blocked++;
+							break;
+						}
 					}
 				}
 				if (i <= ahead || i >= n - behind)
@@ -492,34 +493,92 @@ if (P.EdgeWall)
 			return P.ClimbWeight * climb + P.AcrossWeight * across + TreeWeight * trees + 2f * (startHigh - startLow) + BackdropWeight * blocked;
 		}
 
+		/// <summary>Cells of <see cref="BoundaryCell"/> metres over the terrain: true where a road point may stand (inside the boundary polygon, clear of its edges). Null: no boundary.</summary>
+		private static bool[,] boundary;
+		private static float boundaryX0, boundaryZ0;
+		private const float BoundaryCell = 10f;
+
 		/// <summary>
-		/// The ring of backdrop sprites round the play area (the profile's RingFrom, those named RingPrefix): its middle is the middle of
-		/// their box, its radius the distance to the nearest of them. False, and no ring, when fewer than three are found.
+		/// The profile's boundary polygon (see <see cref="MapProfile.BoundaryGroup"/>), from its sprites' middles in order of direction from
+		/// their centre, made into a grid of the cells a road point may stand in: inside it, with the road, its shoulder and BoundaryClear
+		/// between the point and every edge.
 		/// </summary>
-		private static bool MeasureRing(GameObject env)
+		private static void ReadBoundary(GameObject env, Ground g)
 		{
-			List<Vector3> at = new List<Vector3>();
-			foreach (Transform group in FindAll(env.transform, P.RingFrom))
+			boundary = null;
+			if (P.BoundaryGroup == null)
+			{
+				return;
+			}
+			List<Vector2> corners = new List<Vector2>();
+			foreach (Transform group in FindAll(env.transform, P.BoundaryGroup))
 			{
 				foreach (Transform item in group)
 				{
-					if (item.gameObject.activeInHierarchy && item.name.StartsWith(P.RingPrefix) && item.TryGetComponent(out Renderer r))
+					if (item.gameObject.activeInHierarchy && item.name.StartsWith(P.BoundaryPrefix) && item.TryGetComponent(out Renderer r))
 					{
-						at.Add(r.bounds.center);
+						corners.Add(new Vector2(r.bounds.center.x, r.bounds.center.z));
 					}
 				}
 			}
-			if (at.Count < 3)
+			if (corners.Count < 3)
 			{
-				Mod.Log.LogWarning(P.Key + ": only " + at.Count + " backdrop sprites at " + P.RingFrom + ", the lap is not held inside them.");
+				Mod.Log.LogWarning(P.Key + ": only " + corners.Count + " " + P.BoundaryPrefix + " sprites at " + P.BoundaryGroup + ", the lap is not held inside them.");
+				return;
+			}
+			Vector2 c = Vector2.zero;
+			foreach (Vector2 p in corners)
+			{
+				c += p;
+			}
+			c /= corners.Count;
+			corners.Sort((a, b) => Mathf.Atan2(a.y - c.y, a.x - c.x).CompareTo(Mathf.Atan2(b.y - c.y, b.x - c.x)));
+			float clear = RoadHalfWidth + Shoulder + P.BoundaryClear;
+			int nx = Mathf.CeilToInt(g.SizeX / BoundaryCell) + 1;
+			int nz = Mathf.CeilToInt(g.SizeZ / BoundaryCell) + 1;
+			boundary = new bool[nx, nz];
+			boundaryX0 = g.X0;
+			boundaryZ0 = g.Z0;
+			int open = 0;
+			for (int i = 0; i < nx; i++)
+			{
+				for (int j = 0; j < nz; j++)
+				{
+					Vector2 p = new Vector2(g.X0 + i * BoundaryCell, g.Z0 + j * BoundaryCell);
+					bool inside = false;
+					bool near = false;
+					for (int k = 0, m = corners.Count - 1; k < corners.Count && !near; m = k++)
+					{
+						Vector2 a = corners[k];
+						Vector2 b = corners[m];
+						if ((a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x)
+						{
+							inside = !inside;
+						}
+						Vector2 ab = b - a;
+						float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(1e-3f, ab.sqrMagnitude));
+						near = (a + ab * t - p).magnitude < clear;
+					}
+					boundary[i, j] = inside && !near;
+					if (boundary[i, j])
+					{
+						open++;
+					}
+				}
+			}
+			Mod.Info(P.Key + ": the lap is held inside the polygon of " + corners.Count + " " + P.BoundaryPrefix + " sprites, " + clear.ToString("0") + " m clear of it (" + (open * BoundaryCell * BoundaryCell / 1e6f).ToString("0.00") + " square km to place the road in)");
+		}
+
+		/// <summary>True when a road point at (x, z) would be outside the boundary polygon or too near its edge.</summary>
+		private static bool OutsideBoundary(float x, float z)
+		{
+			if (boundary == null)
+			{
 				return false;
 			}
-			float minX = at.Min(p => p.x), maxX = at.Max(p => p.x), minZ = at.Min(p => p.z), maxZ = at.Max(p => p.z);
-			P.RingX = (minX + maxX) * 0.5f;
-			P.RingZ = (minZ + maxZ) * 0.5f;
-			P.RingR = at.Min(p => new Vector2(p.x - P.RingX, p.z - P.RingZ).magnitude);
-			Mod.Info(P.Key + ": the lap is held inside the ring of " + at.Count + " " + P.RingPrefix + " sprites round (" + P.RingX.ToString("0") + ", " + P.RingZ.ToString("0") + "), radius " + P.RingR.ToString("0") + " m");
-			return true;
+			int i = Mathf.RoundToInt((x - boundaryX0) / BoundaryCell);
+			int j = Mathf.RoundToInt((z - boundaryZ0) / BoundaryCell);
+			return i < 0 || j < 0 || i >= boundary.GetLength(0) || j >= boundary.GetLength(1) || !boundary[i, j];
 		}
 
 		/// <summary>The flat extent of everything in the profile's Avoid groups (each tree line sprite, each building), grown by BackdropClear.</summary>
@@ -820,6 +879,16 @@ if (P.EdgeWall)
 							detail[grass][j, i] = full[grass];
 						}
 						else if (tufts >= 0 && d > h + 7f && d <= h + 30f && Hash(i, j, seed) < 0.05f)
+						{
+							detail[tufts][j, i] = full[tufts];
+						}
+						// The open ground beyond: grass in soft patches about 60 m across (the scene's own grass only lined its old road,
+						// so the wiped ground was bare), from bare between patches to full in their middles, and a few tufts.
+						else if (grass >= 0 && d > h + 22f && Hash(i, j, seed + 151) < Mathf.Clamp01(0.4f + 0.75f * Lattice(x / 60f, z / 60f, seed + 313)))
+						{
+							detail[grass][j, i] = full[grass];
+						}
+						else if (tufts >= 0 && d > h + 30f && Hash(i, j, seed) < 0.04f)
 						{
 							detail[tufts][j, i] = full[tufts];
 						}
