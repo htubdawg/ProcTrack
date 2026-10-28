@@ -47,3 +47,8 @@ The maps are Circuit (in the Stadium), Forest, Mountain, Factory and Tokyo. Curr
 - To test in game, copy `ProcTrack/` to `<game>\BepInEx\HalfGripMods\`, set `TestMode=true` and `TestMap=<map>` in the cfg, and read `BepInEx\LogOutput.log`.
   `VerboseLog` and `ShowPath` help with debugging.
 - A cloud session has no game DLLs, so it can only check syntax. Say so when you report a change as checked.
+
+## Working with the owner
+
+- If you lack access to something (a repo, a host, a tool, game files), ask the owner for it. Do not try workarounds, and do not rebuild a program that
+  already exists when access to it could be granted.
