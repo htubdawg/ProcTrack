@@ -273,15 +273,15 @@ TaperSpread = P.TaperSpread,
 
 			// Copies of the old track's hazards are made before anything is hidden, and put on the ground once the terrain is final.
 PlanTransplants(env, layout, oldSamples, oldGround, seed);
-			if (P.Markers)
-			{
-				PlanMarkers(env, layout, oldSamples);
-			}
-
+			// The tunnel is chosen before the markers, so no sign or barrel is put inside it. (It keeps clear of the hazards, not of the markers, so the order does not move it.)
 			tunnelFrom = -1;
 			if (P.Tunnel)
 			{
 				PlanTunnel(layout, seed);
+			}
+			if (P.Markers)
+			{
+				PlanMarkers(env, layout, oldSamples);
 			}
 			if (roadSource != null)
 			{

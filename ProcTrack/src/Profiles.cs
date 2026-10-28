@@ -108,8 +108,12 @@ public bool Yard;
 public float Expand = 1f;
 		/// <summary>True (with Expand): the enlarged terrain is flat at the old middle height, with only the seeded hills (Roughness) on it.</summary>
 		public bool FlatBase;
-		/// <summary>True: curve signs before the sharp bends and a few burning barrels at them (the Factory's own).</summary>
+		/// <summary>True: curve signs before the sharp bends, and a few burning barrels at them, copied from the scene's own (see SignGroup and FireGroups).</summary>
 		public bool Markers;
+		/// <summary>The group (in the '|' path syntax) whose children are the scene's curve signs. Each is a left or a right sign by its material.</summary>
+		public string SignGroup;
+		/// <summary>The scene's burning barrels to copy to the bends. Empty: no barrels.</summary>
+		public string[] FireGroups = new string[0];
 		/// <summary>True: new grass is laid along both edges of the road, from the scene's own grass layer, so the road shows from afar.</summary>
 		public bool EdgeGrass;
 		/// <summary>True: a tall invisible wall round the edge of the terrain.</summary>
@@ -269,6 +273,8 @@ StraightMin = 360.0,
 			RoadColor = new Color(0.30f, 0.32f, 0.36f),
 			RoadTile = 60f,
 			RoadsideTrees = 0.75f,
+			Markers = true,
+			SignGroup = "Decoration|CurveSigns",
 Tunnel = true,
 				Transplants = new[]
 				{
@@ -321,6 +327,8 @@ Separation = 120.0,
 			HairpinWall = false,
 Yard = true,
 			Markers = true,
+			SignGroup = "Decor|Curve Signs",
+			FireGroups = new[] { "Decor|Tomberon", "Decor|GarbageInFlames" },
 			EdgeGrass = true,
 Roughness = 14f,
 			RoughWave = 420f,

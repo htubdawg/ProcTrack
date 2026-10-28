@@ -94,9 +94,7 @@ uSet = false;
 			{
 				rng = new Rng((ulong)(uint)seed ^ 0x4A5A2DUL);
 			}
-			pen = new GameObject("Pen").transform;
-			pen.SetParent(root.transform, false);
-			pen.gameObject.SetActive(false);
+			EnsurePen();
 
 			List<int> used = spots;
 			foreach (Transplant tp in P.Transplants)
@@ -153,6 +151,18 @@ uSet = false;
 				}
 				Mod.Info(P.Key + ": " + made + " of " + tp.Count + " " + tp.Name + " carried onto the new lap");
 			}
+		}
+
+		/// <summary>The switched off holder the copies wait in until <see cref="LandTransplants"/>, made once per built lap (hazards and markers share it).</summary>
+		private static void EnsurePen()
+		{
+			if (pen != null && pen.parent == root.transform)
+			{
+				return;
+			}
+			pen = new GameObject("Pen").transform;
+			pen.SetParent(root.transform, false);
+			pen.gameObject.SetActive(false);
 		}
 
 /// <summary>The long horizontal axis of an object's meshes (the principal axis of its vertices seen from above). False when the meshes cannot be read.</summary>
