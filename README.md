@@ -3,6 +3,11 @@
 PROCEDURAL MAPS  (ProcTrack 1.0.11, for Half Grip Demo 0.418)
 ============================================================
 
+video showcase
+https://youtu.be/2Q-mIE49L5M
+
+============================================================
+
 Race maps that build a brand new track from a seed every race. Every map is
 dealt into normal runs; each one reuses the game's own scene, props and hazards.
 
