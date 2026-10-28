@@ -34,6 +34,8 @@ namespace HalfGripProcTrack
 			root = null;
 			hidden.Clear();
 			rainPlane = null;
+			// The cameras raised for the last circuit went with its scene.
+			raised.Clear();
 
 			if (Mod.Map == null || RunState.ActiveMap != Mod.Map)
 			{
@@ -61,6 +63,7 @@ namespace HalfGripProcTrack
 
 		internal static void Unload()
 		{
+			RestoreDrawDistance();
 			if (root != null)
 			{
 				UnityEngine.Object.Destroy(root);
@@ -173,6 +176,7 @@ namespace HalfGripProcTrack
 			Rewire(tm, layout, Generator.RoadHalfWidth, hidden);
 			PlaceGrid(tm, env, layout);
 			SpreadHazards(layout, seed, root.transform);
+			RaiseDrawDistance(layout);
 		}
 
 		private static Palette Pick(int seed)

@@ -385,6 +385,55 @@ namespace HalfGripProcTrack
 			copy.SetActive(true);
 		}
 
+		/// <summary>The cameras that see the world, and how far they drew before the circuit raised it, to put back on unload.</summary>
+		private static readonly List<(Camera camera, float far)> raised = new List<(Camera, float)>();
+
+		/// <summary>
+		/// The driver's camera draws to 1200 m and the outside view to 1000 m: enough for the Stadium, whose things all stand within that
+		/// of each other, but the circuit and the buildings round it are wider, and a building across the lap would pop in and out at the
+		/// far clip. Both are raised to the width of everything built (the lap, the grandstand, the carried buildings), never lowered. The
+		/// rear-view mirror is left to the game's render budget, which caps it on purpose.
+		/// </summary>
+		private static void RaiseDrawDistance(Layout layout)
+		{
+			Bounds area = new Bounds(layout.Points[0], Vector3.zero);
+			foreach (Vector3 p in layout.Points)
+			{
+				area.Encapsulate(p);
+			}
+			foreach (Renderer r in root.GetComponentsInChildren<Renderer>())
+			{
+				// The ground slab is 9 km across: it is not something that must be seen whole.
+				if (r.gameObject.name != "field")
+				{
+					area.Encapsulate(r.bounds);
+				}
+			}
+			float needed = new Vector2(area.size.x, area.size.z).magnitude + 100f;
+			foreach (Camera camera in UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+			{
+				if ((camera.name == "Main Camera" || camera.name == "OutsideCamera") && camera.farClipPlane < needed)
+				{
+					raised.Add((camera, camera.farClipPlane));
+					Mod.Info("Circuit: " + camera.name + " draws to " + needed.ToString("0") + " m (was " + camera.farClipPlane.ToString("0") + ")");
+					camera.farClipPlane = needed;
+				}
+			}
+		}
+
+		/// <summary>Puts the cameras' draw distance back (mods switched off in the race); a camera gone with its scene is skipped.</summary>
+		private static void RestoreDrawDistance()
+		{
+			foreach ((Camera camera, float far) in raised)
+			{
+				if (camera != null)
+				{
+					camera.farClipPlane = far;
+				}
+			}
+			raised.Clear();
+		}
+
 		private static bool Bounds(Transform item, out Bounds bounds)
 		{
 			bounds = default;
