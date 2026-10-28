@@ -33,7 +33,7 @@ The maps are Circuit (in the Stadium), Forest, Mountain, Factory and Tokyo. Curr
 - **Determinism.** Every player in a Multiplayer room must build the identical track and weather from the same seed. Draw only from `Rng`, never from
   `System.Random` or `UnityEngine.Random`. The shape of the lap must not depend on any config setting. Any change to generation means everyone in a room needs the
   same ProcTrack version.
-- Bump `version` in `mod.json` with each release, and keep the version and the text of `README.md` and `READ ME FIRST - ProcTrack.txt` in step.
+- Bump `version` in `mod.json` with each release, and keep the version in `README.md` in step.
 - Stay in C# 10 and netstandard2.1 APIs. The in-game compiler does not take newer language features.
 - Match the existing style: tabs, `///` summaries that explain *why*, `Mod.Info(...)` for verbose logging, and `Mod.Log.LogWarning` with a try/catch around risky
   scene work.
