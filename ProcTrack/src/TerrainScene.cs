@@ -1540,6 +1540,33 @@ if (P.RoadsideTrees > 0f)
 		/// it repeats; otherwise the road is a plain colour, since a texture that was unwrapped once over the old road would smear. White
 		/// edge lines go on top.
 		/// </summary>
+		/// <summary>Snow for banks: the colour of fresh snow in the scene's light, with the road's shader.</summary>
+		private static readonly Color Snow = new Color(0.88f, 0.91f, 0.95f);
+
+		/// <summary>
+		/// The snow banks along both road edges (MapProfile.EdgeBanks): a rounded bank from just over the tarmac's edge, 0.45 m at its top
+		/// 1 m out, down into the ground 6 m out, where the ground has climbed back from its sink under the road. Solid, so a car rides up
+		/// on it like a kerb, but not a wall: hitting it does not count as a crash.
+		/// </summary>
+		private static void BuildEdgeBanks(Layout layout, Material source)
+		{
+			float h = RoadHalfWidth;
+			Dictionary<string, Batch> batches = new Dictionary<string, Batch>();
+			Batch bank = GetBatch(batches, "edge snow bank", Snow, true, false);
+			foreach (float sg in new[] { 1f, -1f })
+			{
+				Loop.Sweep(bank, layout, new[]
+				{
+					new Vector2(sg * (h - 0.3f), 0.06f), new Vector2(sg * (h + 1f), 0.45f), new Vector2(sg * (h + 2.5f), 0.35f),
+					new Vector2(sg * (h + 4.5f), -0.1f), new Vector2(sg * (h + 6f), -0.6f), new Vector2(sg * (h - 0.3f), -0.6f)
+				});
+			}
+			Transform parent = new GameObject("EdgeBanks").transform;
+			parent.SetParent(root.transform, false);
+			Emit(batches, parent, source);
+			Mod.Info(P.Key + ": snow banks along both road edges");
+		}
+
 		private static void BuildMeshRoad(Transform source, Layout layout)
 		{
 			float h = RoadHalfWidth;
@@ -1588,6 +1615,10 @@ if (P.RoadsideTrees > 0f)
 			lines.transform.SetParent(root.transform, false);
 			lines.AddComponent<MeshFilter>().sharedMesh = edge.ToMesh();
 			lines.AddComponent<MeshRenderer>().sharedMaterial = CircuitScene.MakeMaterial(old, edge.Color);
+			if (P.EdgeBanks)
+			{
+				BuildEdgeBanks(layout, old);
+			}
 			Mod.Info(P.Key + ": road mesh " + mesh.vertexCount + " vertices, " + (material.mainTexture != null ? "texture " + material.mainTexture.name : "plain colour") + ", layer " + LayerMask.LayerToName(go.layer));
 		}
 

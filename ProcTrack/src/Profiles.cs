@@ -85,6 +85,11 @@ namespace HalfGripProcTrack
 		public int ChainStraights;
 		/// <summary>True: an S-curved tunnel is built over a bendy stretch of the lap, from the cave's material.</summary>
 		public bool Tunnel;
+		/// <summary>
+		/// True (with a mesh road): a low rounded snow bank along both edges of the road, over the step where the ground is sunk under the
+		/// tarmac (so a slope never brings it up through) and climbs back to the road's height over the shoulder.
+		/// </summary>
+		public bool EdgeBanks;
 /// <summary>
 		/// A very sharp hairpin (see <see cref="Shape.HairpinRadius"/>): its radius in metres, and the lean of the two straights toward each
 		/// other. 0: the lap is a stadium with no hairpin.
@@ -325,6 +330,7 @@ StraightMin = 360.0,
 			RoadColor = new Color(0.30f, 0.32f, 0.36f),
 			RoadTile = 60f,
 			RoadsideTrees = 0.75f,
+			EdgeBanks = true,
 			Markers = true,
 			SignGroup = "Decoration|CurveSigns",
 Tunnel = true,
@@ -333,7 +339,11 @@ Tunnel = true,
 
 					// The two twisty ramps, each with the jump pad that sits on it, put on the road near the start of a straight.
 					new Transplant { Name = "ramp", Path = "Decoration|RampaTwisty", Also = new[] { "Decoration|Cube" }, AlsoRadius = 40f, Count = 1, OnRoad = true, Spacing = 70, StraightStart = true, CentreOnRoad = true },
-					new Transplant { Name = "second ramp", Path = "Decoration|RampaTwisty (1)", Also = new[] { "Decoration|Cube" }, AlsoRadius = 40f, Count = 1, OnRoad = true, Spacing = 70, StraightStart = true, CentreOnRoad = true }
+					new Transplant { Name = "second ramp", Path = "Decoration|RampaTwisty (1)", Also = new[] { "Decoration|Cube" }, AlsoRadius = 40f, Count = 1, OnRoad = true, Spacing = 70, StraightStart = true, CentreOnRoad = true },
+					// The three ice arches the old road ran under, across the new road the same way, its middle under theirs.
+					new Transplant { Name = "ice arch", Path = "Decoration|Arches|Arch1", Count = 1, OnRoad = true, Spacing = 60, CentreOnRoad = true },
+					new Transplant { Name = "second ice arch", Path = "Decoration|Arches|Arch2", Count = 1, OnRoad = true, Spacing = 60, CentreOnRoad = true },
+					new Transplant { Name = "third ice arch", Path = "Decoration|Arches|Arch3", Count = 1, OnRoad = true, Spacing = 60, CentreOnRoad = true }
 				}
 		};
 
