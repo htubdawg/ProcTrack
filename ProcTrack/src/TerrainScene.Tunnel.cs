@@ -11,8 +11,7 @@ namespace HalfGripProcTrack
 	/// </summary>
 	internal static partial class TerrainScene
 	{
-		/// <summary>Lap points the tunnel spans: the cave's own length when it was measured (MeasureCave), else 44 (220 m).</summary>
-		private static int TunnelLength = 44;
+		private const int TunnelLength = 44;
 		private const float InnerHalf = 23f;
 		private const float OuterHalf = 26.5f;
 		// Upright walls 7 m high under the arch: 22 m inside at the top, a tube more than a flat vault (it was 4 + 11, and read as squat).
@@ -98,10 +97,8 @@ namespace HalfGripProcTrack
 		private static int tunnelFrom = -1;
 
 		/// <summary>Chooses the stretch and levels the road through it (a straight slope from end to end, no bumps), before the road and the terrain are built.</summary>
-		private static void PlanTunnel(GameObject env, Layout layout, List<Vector3> oldSamples, Ground oldGround, int seed)
+		private static void PlanTunnel(Layout layout, int seed)
 		{
-			TunnelLength = 44;
-			MeasureCave(env, oldSamples, oldGround, layout.Step);
 			Rng rng;
 			unchecked
 			{
@@ -122,11 +119,6 @@ int from = tunnelFrom;
 			if (from < 0)
 			{
 				Mod.Info(P.Key + ": no stretch of this lap suits the tunnel, none is built.");
-				return;
-			}
-			// The scene's own cave, bent onto the road; the tunnel below only when that cannot be done.
-			if (BendCave(env, layout, from))
-			{
 				return;
 			}
 			int n = layout.Count;
