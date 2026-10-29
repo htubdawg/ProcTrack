@@ -1,7 +1,7 @@
 {
 	"id": "proctrack",
 	"name": "Procedural Maps",
-	"version": "1.0.22",
+	"version": "1.0.24",
 	"author": "Claude - Oretsej",
 	"description": "Race maps that build a new closed lap from a seed every race: a start straight, then a random run of corners. The circuit is about 3.2 km of tarmac in the Stadium. The forest, mountain, factory and Tokyo laps (2.7 to 3.4 km) are cut into the terrain of the game's own scenes, with their hazards carried onto the new lap, a weather dealt from the scene's own weathers, and (Tokyo) a walled, tight city course. In a Multiplayer room every player gets the host's seed, so everybody races the same track and weather.",
 	"gameVersion": "0.418"

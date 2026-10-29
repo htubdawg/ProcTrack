@@ -1,6 +1,6 @@
 100% AI generated code
 ============================================================
-PROCEDURAL MAPS  (ProcTrack 1.0.22, for Half Grip Demo 0.418)
+PROCEDURAL MAPS  (ProcTrack 1.0.24, for Half Grip Demo 0.418)
 ============================================================
 
 video showcase
@@ -11,11 +11,13 @@ https://youtu.be/2Q-mIE49L5M
 Race maps that build a brand new track from a seed every race. Every map is
 dealt into normal runs; each one reuses the game's own scene, props and hazards.
 
-  Procedural Circuit   3.2 km tarmac lap built inside the Stadium, eight cars on
-                       the grid, a grandstand along the start straight, and
-                       the Stadium's pit box, bridge and skyline set round it.
-  Procedural Forest    Wide dirt road through Forest Field, a hairpin with
-                       trees, fields and the game's tornado.
+  Procedural Circuit   3.2 km tarmac lap built inside the Stadium, its corners
+                       turning both ways, eight cars on the grid, a grandstand
+                       along the start straight, and the Stadium's pit box,
+                       bridge and skyline set round it.
+  Procedural Forest    Wide dirt road through Forest Field, its corners turning
+                       both ways, the sharpest with trees beyond it, fields
+                       and the game's tornado.
   Procedural Mountain  A winding road across the Winter Mountain crater, its
                        corners turning both ways and laid out anew each race,
                        with an ice tube, ice arches, ramps and curve signs,
@@ -26,9 +28,9 @@ dealt into normal runs; each one reuses the game's own scene, props and hazards.
                        spinner. A wall out of the hall stops the U-turn being
                        cut, a wall opposite the spinner stops it being dodged,
                        and a skyline of buildings stands on the outer ground.
-  Procedural Tokyo     Tight walled city course with themed districts, torii
-                       gates with sign billboards, a hairpin and rooftop
-                       machine guns.
+  Procedural Tokyo     Tight walled city course, its corners turning both ways,
+                       with themed districts, torii gates with sign billboards
+                       and rooftop machine guns.
 
 Each map uses its source map's own icon, turned upside down and tinted (circuit yellow, forest green, mountain blue, factory orange, Tokyo pink).
 

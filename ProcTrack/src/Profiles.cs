@@ -250,7 +250,7 @@ Tornado = true,
 			// across (SpanX, SpanZ), about the width the old 2.7 km laps had, so the lap stays inside the backdrop tree lines. Checked over
 			// 300 seeds off line at 1250 m: no plain fallback lap, the longest straight 13 percent of the lap on average and 16 at most.
 			SpanX = 1250.0,
-			SpanZ = 1250.0,
+			SpanZ = 900.0,
 			// The road's middle at least 100 m inside the tree lines (40 + 4 + 56): the most every lap fits at, checked off line against the
 			// 0.418 tree lines (normal variant) for 60 seeds. The old track kept 295 m from them, which no 2.7 km teardrop fits; so a belt of
 			// trees along their inside hides the ground under the backdrop sprites, which hang high.
@@ -261,15 +261,18 @@ Tornado = true,
 			// Banks up to 90 m wide (the Mountain's 85): a 40 m cut into the hills at the edge, where the hairpin often goes, is a slope of
 			// about 24 degrees, not a 45 m wide cliff.
 			MaxBank = 90f,
-			Wobble = 0.006,
+			// A chain of five to eight corners going both ways (as the Mountain), in a box 1250 by 900 so the ring of corners is stretched
+			// along the start straight. Checked off line over 200 seeds: no plain fallback lap, the longest straight 13 percent of the lap,
+			// about a fifth of the turning against the lap; 40 of 40 fit inside the tree lines 100 m clear.
+			Chain = true,
+			ChainMin = 5,
+			ChainMax = 8,
+			DentChance = 0.45,
+			DentDepth = 0.95,
+			Wobble = 0.005,
 			Harmonics = 8,
 			AmpCap = 260.0,
 			StraightKeep = 330.0,
-			Bumps = new[]
-			{
-				new Shape.Bump { At = 200.0, Width = 480.0, Height = 110.0, From = 1, Flip = true },
-				new Shape.Bump { At = -420.0, Width = 520.0, Height = 120.0, From = 1, Flip = true }
-			},
 			HairpinTrees = true,
 			Roughness = 5f,
 			RoughWave = 300f
@@ -436,7 +439,15 @@ Expand = 1.8f,
 			StraightMax = 560.0,
 			SpanX = 1300.0,
 			SpanZ = 800.0,
-			Wobble = 0.008,
+			// A chain of six to nine corners going both ways (as the Mountain). Checked off line over 200 seeds: no plain fallback lap, the
+			// longest straight 12 percent of the lap (was 31), about 28 percent of the turning against the lap.
+			Chain = true,
+			ChainMin = 6,
+			ChainMax = 9,
+			DentChance = 0.35,
+			DentDepth = 0.9,
+			StraightKeep = 330.0,
+			Wobble = 0.006,
 			Harmonics = 8,
 			AmpCap = 300.0,
 HairpinRadius = 36.0,
