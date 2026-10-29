@@ -199,8 +199,16 @@ double[] segR = new double[8];
 						{
 							return null;
 						}
+						// The plain stadium in its place (the fallback, all tries failed). ChainBase has set its outs to nothing, so the stadium's
+						// own start straight, hairpin and middle are put back, or the start would be read from before the lap's first point.
 						shape = new Shape { Length = shape.Length, StraightMin = shape.StraightMin, StraightMax = shape.StraightMax };
 						tear = false;
+						lead = straight;
+						backLen = straight;
+						chainMid = -1.0;
+						keptStraights = null;
+						r2 = 0.0;
+						a2 = 0.0;
 						arcEnd = straight + DetMath.Pi * radius;
 					}
 					else
