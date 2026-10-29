@@ -76,6 +76,13 @@ namespace HalfGripProcTrack
 		public bool NoMirror;
 		/// <summary>Above 0: only the last this many metres of the start straight are kept dead straight (see <see cref="Shape.StraightKeep"/>). 0: all of it.</summary>
 		public double StraightKeep;
+		/// <summary>True: the lap is a chain of corners going both ways, not a teardrop (see <see cref="Shape.Chain"/> for these four).</summary>
+		public bool Chain;
+		public int ChainMin = 6;
+		public int ChainMax = 9;
+		public double DentChance = 0.4;
+		public double DentDepth = 0.55;
+		public int ChainStraights;
 		/// <summary>True: an S-curved tunnel is built over a bendy stretch of the lap, from the cave's material.</summary>
 		public bool Tunnel;
 /// <summary>
@@ -283,7 +290,19 @@ Tornado = true,
 			Half = 18f,
 StraightMin = 360.0,
 			StraightMax = 560.0,
-			BackStraight = 300.0,
+			// A chain of six to nine corners, about a third of them pulled in so the road turns against the lap there, in place of the
+			// teardrop, whose hairpin was always the last corner, into a long run home down the crater wall. The longest straight is the
+			// start straight, and only the grid's 330 m of it is kept straight; two more straights of 260 m or more keep their first 250 m
+			// straight for the ramps. Checked off line over 200 seeds: no plain fallback lap, the longest straight 12 percent of the lap,
+			// about a quarter of the turning against the lap, room for both ramps on 199 and for the tunnel on all.
+			Chain = true,
+			ChainMin = 6,
+			ChainMax = 9,
+			DentChance = 0.35,
+			DentDepth = 0.9,
+			ChainStraights = 3,
+			Wobble = 0.005,
+			StraightKeep = 330.0,
 			HairpinRadius = 36.0,
 			Taper = 0.2,
 			MinRadius = 30.0,
