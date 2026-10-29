@@ -1,6 +1,6 @@
 100% AI generated code
 ============================================================
-PROCEDURAL MAPS  (ProcTrack 1.0.17, for Half Grip Demo 0.418)
+PROCEDURAL MAPS  (ProcTrack 1.0.18, for Half Grip Demo 0.418)
 ============================================================
 
 video showcase
@@ -18,7 +18,8 @@ dealt into normal runs; each one reuses the game's own scene, props and hazards.
                        trees, fields and the game's tornado.
   Procedural Mountain  A winding road across the Winter Mountain crater, its
                        corners turning both ways and laid out anew each race,
-                       with an ice tube, ramps and curve signs.
+                       with an ice tube, ice arches, ramps and curve signs,
+                       and snow banked along the road.
   Procedural Factory   A long lap that starts straight into the Fire Factory
                        building (the U-turn through the hall, hammers, barrel
                        machine), then runs out to a big loop with the giant

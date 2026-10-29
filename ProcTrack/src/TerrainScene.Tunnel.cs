@@ -201,8 +201,24 @@ int from = tunnelFrom;
 				}
 			}
 
+			// Snow banked against both inner walls, as in the original cave (its CaveWalls): a quarter round 2.6 m up the wall, reaching
+			// the road's edge. Solid, not a wall.
+			Dictionary<string, Batch> snow = new Dictionary<string, Batch>();
+			Batch banks = GetBatch(snow, "tunnel snow bank", Snow, true, false);
+			float roadEdge = RoadHalfWidth - 0.2f;
+			foreach (float sg in new[] { 1f, -1f })
+			{
+				Loop.SweepRange(banks, layout, new[]
+				{
+					new Vector2(sg * roadEdge, -0.3f), new Vector2(sg * roadEdge, 0.05f), new Vector2(sg * (InnerHalf - 3.8f), 0.6f),
+					new Vector2(sg * (InnerHalf - 2.6f), 1.5f), new Vector2(sg * (InnerHalf - 1.2f), 2.3f), new Vector2(sg * (InnerHalf - 0.1f), 2.6f),
+					new Vector2(sg * (InnerHalf - 0.1f), -0.3f)
+				}, from, TunnelLength);
+			}
+
 			GameObject go = new GameObject("Tunnel");
 			go.transform.SetParent(root.transform, false);
+			Emit(snow, go.transform, rock);
 			Mesh mesh = shell.ToMesh();
 			go.AddComponent<MeshFilter>().sharedMesh = mesh;
 			go.AddComponent<MeshRenderer>().sharedMaterial = rock;
