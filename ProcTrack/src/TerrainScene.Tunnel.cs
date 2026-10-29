@@ -14,9 +14,10 @@ namespace HalfGripProcTrack
 		private const int TunnelLength = 44;
 		private const float InnerHalf = 23f;
 		private const float OuterHalf = 26.5f;
-		private const float WallHeight = 4f;
-		private const float InnerRise = 11f;
-		private const float OuterRise = 14.5f;
+		// Upright walls 7 m high under the arch: 22 m inside at the top, a tube more than a flat vault (it was 4 + 11, and read as squat).
+		private const float WallHeight = 7f;
+		private const float InnerRise = 15f;
+		private const float OuterRise = 18.5f;
 		private const int ArchSegments = 12;
 
 		/// <summary>The cross-section from the left foot, over the top, to the right foot, as (lateral, height) pairs.</summary>
@@ -201,24 +202,73 @@ int from = tunnelFrom;
 				}
 			}
 
-			// Snow banked against both inner walls, as in the original cave (its CaveWalls): a quarter round 2.6 m up the wall, reaching
-			// the road's edge. Solid, not a wall.
-			Dictionary<string, Batch> snow = new Dictionary<string, Batch>();
-			Batch banks = GetBatch(snow, "tunnel snow bank", Snow, true, false);
+			// Snow banked against both inner walls, as in the original cave (its CaveWalls, and their snow): a rounded bank 6 m up the
+			// wall, a third of the way to the top, reaching the road's edge. Solid, not a wall.
+			Transform caveWalls = FindFirst(env.transform, "Decoration|Cave|CaveWalls");
+			Renderer wallsRenderer = caveWalls != null ? caveWalls.GetComponent<Renderer>() : null;
+			Material oldSnow = wallsRenderer != null ? wallsRenderer.sharedMaterial : null;
+			Material snow;
+			if (oldSnow != null && oldSnow.mainTexture != null && oldSnow.mainTexture.wrapMode == TextureWrapMode.Repeat)
+			{
+				snow = new Material(oldSnow) { hideFlags = HideFlags.HideAndDontSave };
+				snow.mainTextureScale = Vector2.one;
+				snow.mainTextureOffset = Vector2.zero;
+			}
+			else
+			{
+				snow = CircuitScene.MakeMaterial(oldSnow != null ? oldSnow : rock, Snow);
+			}
 			float roadEdge = RoadHalfWidth - 0.2f;
+			Batch banks = new Batch("tunnel snow bank", Snow, true);
 			foreach (float sg in new[] { 1f, -1f })
 			{
-				Loop.SweepRange(banks, layout, new[]
+				// Across from the road's edge to the wall, over the top of the bank; a flat foot under it closes it.
+				Vector2[] bank =
 				{
-					new Vector2(sg * roadEdge, -0.3f), new Vector2(sg * roadEdge, 0.05f), new Vector2(sg * (InnerHalf - 3.8f), 0.6f),
-					new Vector2(sg * (InnerHalf - 2.6f), 1.5f), new Vector2(sg * (InnerHalf - 1.2f), 2.3f), new Vector2(sg * (InnerHalf - 0.1f), 2.6f),
-					new Vector2(sg * (InnerHalf - 0.1f), -0.3f)
-				}, from, TunnelLength);
+					new Vector2(sg * roadEdge, -0.3f), new Vector2(sg * roadEdge, 0.05f), new Vector2(sg * (InnerHalf - 3.9f), 1.6f),
+					new Vector2(sg * (InnerHalf - 2.9f), 3.3f), new Vector2(sg * (InnerHalf - 1.8f), 4.8f), new Vector2(sg * (InnerHalf - 0.8f), 5.7f),
+					new Vector2(sg * (InnerHalf - 0.1f), 6f), new Vector2(sg * (InnerHalf - 0.1f), -0.3f)
+				};
+				Vector2 middle = Vector2.zero;
+				foreach (Vector2 v in bank)
+				{
+					middle += v;
+				}
+				middle /= bank.Length;
+				float[] bu = new float[bank.Length];
+				for (int k = 1; k < bank.Length; k++)
+				{
+					bu[k] = bu[k - 1] + (bank[k] - bank[k - 1]).magnitude / tile;
+				}
+				for (int q = 0; q < TunnelLength; q++)
+				{
+					int i = (from + q) % n;
+					int j = (i + 1) % n;
+					Vector3 r0 = layout.Right(i);
+					Vector3 r1 = layout.Right(j);
+					Vector3 p0 = layout.Points[i];
+					Vector3 p1 = layout.Points[j];
+					float v0 = (from + q) * layout.Step / tile;
+					float v1 = (from + q + 1) * layout.Step / tile;
+					for (int k = 0; k + 1 < bank.Length; k++)
+					{
+						Vector2 a = bank[k];
+						Vector2 c = bank[k + 1];
+						Vector2 mid = (a + c) * 0.5f - middle;
+						banks.QuadUV(p0 + r0 * a.x + Vector3.up * a.y, p0 + r0 * c.x + Vector3.up * c.y, p1 + r1 * c.x + Vector3.up * c.y, p1 + r1 * a.x + Vector3.up * a.y,
+							new Vector2(bu[k], v0), new Vector2(bu[k + 1], v0), new Vector2(bu[k + 1], v1), new Vector2(bu[k], v1), r0 * mid.x + Vector3.up * mid.y);
+					}
+				}
 			}
 
 			GameObject go = new GameObject("Tunnel");
 			go.transform.SetParent(root.transform, false);
-			Emit(snow, go.transform, rock);
+			GameObject snowBanks = new GameObject("SnowBanks");
+			snowBanks.transform.SetParent(go.transform, false);
+			Mesh bankMesh = banks.ToMesh();
+			snowBanks.AddComponent<MeshFilter>().sharedMesh = bankMesh;
+			snowBanks.AddComponent<MeshRenderer>().sharedMaterial = snow;
+			snowBanks.AddComponent<MeshCollider>().sharedMesh = bankMesh;
 			Mesh mesh = shell.ToMesh();
 			go.AddComponent<MeshFilter>().sharedMesh = mesh;
 			go.AddComponent<MeshRenderer>().sharedMaterial = rock;
@@ -238,7 +288,7 @@ int from = tunnelFrom;
 			{
 				GameObject lamp = new GameObject("Lamp");
 				lamp.transform.SetParent(go.transform, false);
-				lamp.transform.position = layout.Points[(from + q) % n] + Vector3.up * 9f;
+				lamp.transform.position = layout.Points[(from + q) % n] + Vector3.up * 14f;
 				Light light = lamp.AddComponent<Light>();
 				light.type = LightType.Point;
 				light.range = 48f;
@@ -255,7 +305,7 @@ int from = tunnelFrom;
 				float t = Loop.Turn(layout, (from + q) % n);
 				if (t > 0f) { left += t; } else { right -= t; }
 			}
-			Mod.Info(P.Key + ": tunnel of " + (TunnelLength * layout.Step).ToString("0") + " m at lap point " + from + " of " + n + " (bends " + (left * Mathf.Rad2Deg).ToString("0") + " degrees left, " + (right * Mathf.Rad2Deg).ToString("0") + " right), " + mesh.vertexCount + " vertices, " + lamps + " lamps, " + (rock.mainTexture != null ? "texture " + rock.mainTexture.name : "plain rock colour"));
+			Mod.Info(P.Key + ": tunnel of " + (TunnelLength * layout.Step).ToString("0") + " m at lap point " + from + " of " + n + " (bends " + (left * Mathf.Rad2Deg).ToString("0") + " degrees left, " + (right * Mathf.Rad2Deg).ToString("0") + " right), " + mesh.vertexCount + " vertices, " + lamps + " lamps, " + (rock.mainTexture != null ? "texture " + rock.mainTexture.name : "plain rock colour") + ", snow banks " + (snow.mainTexture != null ? "texture " + snow.mainTexture.name : "plain snow colour"));
 		}
 	}
 }
