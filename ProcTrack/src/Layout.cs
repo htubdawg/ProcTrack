@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HalfGripProcTrack
@@ -77,6 +78,22 @@ namespace HalfGripProcTrack
 		/// the line is 90 before the straight's end), and the rest of it bends like the lap. 0: the whole start straight is kept.
 		/// </summary>
 		public double StraightKeep = 0.0;
+		/// <summary>
+		/// True: the lap's base is a chain of corners in place of the teardrop or stadium: ChainMin to ChainMax corner points round a ring
+		/// (squashed to the span limits), some of them (DentChance each) pulled in toward the middle by DentDepth, each corner rounded with an
+		/// arc of 1.4 to 3.9 times MinRadius, joined by straights, all scaled to the lap's length. A point pulled in turns against the lap, so
+		/// the corners go both ways. The longest straight is the start straight.
+		/// </summary>
+		public bool Chain = false;
+		public int ChainMin = 6;
+		public int ChainMax = 9;
+		public double DentChance = 0.4;
+		public double DentDepth = 0.55;
+		/// <summary>The chain must have at least this many straights of ChainStraightLength or more (the start straight among them), for
+		/// things carried onto the start of a straight (ramps). The first 250 m of each such straight is kept clear of the wobble, so it stays
+		/// a straight. 0: no such rule (and no straight but the start's kept).</summary>
+		public int ChainStraights = 0;
+		public double ChainStraightLength = 260.0;
 
 		/// <summary>Humps in the lap's edge: a stretch pushed out sideways by up to Height and back again over Width metres.</summary>
 		public Bump[] Bumps;
@@ -172,7 +189,28 @@ double[] segX = new double[8];
 double[] segZ = new double[8];
 double[] segH = new double[8];
 double[] segR = new double[8];
-if (tear && shape.FlareRadius > 0.0)
+				double chainMid = -1.0;
+				List<double> keptStraights = null;
+				if (shape.Chain)
+				{
+					if (!ChainBase(rng, shape, out segLen, out segX, out segZ, out segH, out segR, out lead, out chainMid, out r2, out a2, out keptStraights))
+					{
+						if (check)
+						{
+							return null;
+						}
+						shape = new Shape { Length = shape.Length, StraightMin = shape.StraightMin, StraightMax = shape.StraightMax };
+						tear = false;
+						arcEnd = straight + DetMath.Pi * radius;
+					}
+					else
+					{
+						tear = true;
+						backLen = 0.0;
+						arcEnd = lead;
+					}
+				}
+				else if (tear && shape.FlareRadius > 0.0)
 				{
 					double theta = shape.Taper * (shape.TaperLow + shape.TaperSpread * rng.Next());
 					r2 = shape.HairpinRadius * (1.0 + 0.3 * rng.Next());
@@ -269,7 +307,7 @@ arcEnd = lead + DetMath.Pi * r2 + nk;
 				{
 					arcEnd = straight + DetMath.Pi * radius;
 				}
-double hairpinMid = lolli ? lead + DetMath.Pi * r2 * 0.5 : shape.Length - r2 * a2 * 0.5;
+double hairpinMid = chainMid >= 0.0 ? chainMid : lolli ? lead + DetMath.Pi * r2 * 0.5 : shape.Length - r2 * a2 * 0.5;
 
 				int[] ks = new int[shape.Harmonics];
 				for (int k = 0; k < ks.Length; k++)
@@ -334,6 +372,16 @@ window *= DetMath.Smooth(outside / 150.0);
 						}
 						double fromHairpin = Math.Max(0.0, fromMid - r2 * a2 * 0.5 - (lolli ? 450.0 : 0.0));
 						window *= DetMath.Smooth(fromHairpin / 250.0);
+					}
+					if (keptStraights != null)
+					{
+						// The chain's long straights (from, to pairs) keep no wobble, fading in over 120 m beyond them.
+						double near = double.MaxValue;
+						for (int q = 0; q < keptStraights.Count; q += 2)
+						{
+							near = Math.Min(near, Math.Max(0.0, Math.Max(keptStraights[q] - s, s - keptStraights[q + 1])));
+						}
+						window *= DetMath.Smooth(near / 120.0);
 					}
 					double d = 0.0;
 					for (int k = 0; k < ks.Length; k++)
@@ -463,6 +511,141 @@ Attempt = attempt,
 					MinRadius = (float)minRadius
 				};
 			}
+		}
+
+		/// <summary>
+		/// The corner chain (see <see cref="Shape.Chain"/>) as segments for <see cref="TearPoint"/>: the start straight first, then arcs and
+		/// straights in turn. Every corner point makes the same draws whatever happens, so one corner never changes another's. False when no
+		/// straight is long enough for the grid or the corners do not fit their straights.
+		/// </summary>
+		private static bool ChainBase(Rng rng, Shape shape, out double[] len, out double[] sx, out double[] sz, out double[] sh, out double[] rad, out double lead, out double mid, out double hr, out double ha, out List<double> kept)
+		{
+			len = sx = sz = sh = rad = null;
+			lead = mid = hr = ha = 0.0;
+			kept = null;
+			int k = shape.ChainMin + (int)(rng.Next() * (shape.ChainMax - shape.ChainMin + 1));
+			double squash = double.IsNaN(shape.MaxSpanZ) || double.IsPositiveInfinity(shape.MaxSpan) ? 0.7 : Math.Min(1.0, shape.MaxSpanZ / shape.MaxSpan);
+			double[] vx = new double[k];
+			double[] vz = new double[k];
+			double[] want = new double[k];
+			for (int i = 0; i < k; i++)
+			{
+				double jitter = rng.Next() - 0.5;
+				bool dent = rng.Next() < shape.DentChance;
+				double depth = rng.Next();
+				want[i] = shape.MinRadius * (1.4 + 2.5 * rng.Next());
+				double a = 2.0 * DetMath.Pi * (i + 0.6 * jitter) / k;
+				double f = dent ? 1.0 - shape.DentDepth * (0.6 + 0.4 * depth) : 1.0 - 0.15 * depth;
+				vx[i] = DetMath.Cos(a) * f;
+				vz[i] = DetMath.Sin(a) * f * squash;
+			}
+			double[] turn = new double[k];
+			double[] side = new double[k];
+			double perimeter = 0.0;
+			for (int i = 0; i < k; i++)
+			{
+				int p = (i - 1 + k) % k;
+				int q = (i + 1) % k;
+				double ix = vx[i] - vx[p], iz = vz[i] - vz[p], ox = vx[q] - vx[i], oz = vz[q] - vz[i];
+				turn[i] = Math.Atan2(ix * oz - iz * ox, ix * ox + iz * oz);
+				side[i] = Math.Sqrt(ox * ox + oz * oz);
+				perimeter += side[i];
+			}
+			double scale = shape.Length / perimeter;
+			double[] rho = new double[k];
+			double[] tan = new double[k];
+			for (int pass = 0; pass < 6; pass++)
+			{
+				for (int i = 0; i < k; i++)
+				{
+					int p = (i - 1 + k) % k;
+					double room = 0.45 * scale * Math.Min(side[p], side[i]);
+					double t = Math.Tan(Math.Abs(turn[i]) * 0.5);
+					rho[i] = want[i];
+					if (rho[i] * t > room)
+					{
+						rho[i] = Math.Max(shape.MinRadius * 1.1, room / Math.Max(1e-6, t));
+					}
+					tan[i] = rho[i] * t;
+				}
+				double length = 0.0;
+				for (int i = 0; i < k; i++)
+				{
+					length += scale * side[i] - tan[i] - tan[(i + 1) % k] + rho[i] * Math.Abs(turn[i]);
+				}
+				scale *= shape.Length / length;
+			}
+			int first = -1;
+			double longest = 0.0;
+			int long_ = 0;
+			for (int i = 0; i < k; i++)
+			{
+				double straight = scale * side[i] - tan[i] - tan[(i + 1) % k];
+				if (straight < 10.0)
+				{
+					return false;
+				}
+				if (straight >= shape.ChainStraightLength)
+				{
+					long_++;
+				}
+				if (straight > longest)
+				{
+					longest = straight;
+					first = i;
+				}
+			}
+			if (longest < Math.Max(360.0, shape.StraightKeep + 30.0) || long_ < shape.ChainStraights)
+			{
+				return false;
+			}
+			kept = shape.ChainStraights > 0 ? new List<double>() : null;
+			len = new double[2 * k];
+			sx = new double[2 * k];
+			sz = new double[2 * k];
+			sh = new double[2 * k];
+			rad = new double[2 * k];
+			double hx = 0.0, hz = 0.0, hh = 0.0, acc = 0.0, sharpest = -1.0;
+			for (int m = 0; m < k; m++)
+			{
+				int i = (first + m) % k;
+				int c = (i + 1) % k;
+				double straight = scale * side[i] - tan[i] - tan[c];
+				len[2 * m] = straight;
+				if (kept != null && m > 0 && straight >= shape.ChainStraightLength)
+				{
+					kept.Add(acc + 10.0);
+					kept.Add(acc + Math.Min(straight - 10.0, 250.0));
+				}
+				sx[2 * m] = hx;
+				sz[2 * m] = hz;
+				sh[2 * m] = hh;
+				hx += straight * DetMath.Cos(hh);
+				hz += straight * DetMath.Sin(hh);
+				acc += straight;
+				double arc = rho[c] * Math.Abs(turn[c]);
+				double r = turn[c] >= 0.0 ? rho[c] : -rho[c];
+				len[2 * m + 1] = arc;
+				sx[2 * m + 1] = hx;
+				sz[2 * m + 1] = hz;
+				sh[2 * m + 1] = hh;
+				rad[2 * m + 1] = r;
+				double cx = hx - r * DetMath.Sin(hh);
+				double cz = hz + r * DetMath.Cos(hh);
+				hh += arc / r;
+				hx = cx + r * DetMath.Sin(hh);
+				hz = cz - r * DetMath.Cos(hh);
+				if (Math.Abs(turn[c]) > sharpest)
+				{
+					sharpest = Math.Abs(turn[c]);
+					mid = acc + arc * 0.5;
+					hr = rho[c];
+					ha = Math.Abs(turn[c]);
+				}
+				acc += arc;
+			}
+			lead = len[0];
+			return true;
 		}
 
 /// <summary>The teardrop at distance s along it, with the outward (right hand) normal: the four segments are line, left arc, line, left arc.</summary>
