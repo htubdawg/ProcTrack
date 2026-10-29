@@ -25,6 +25,13 @@ Every lap is a chain of corners turning both ways, laid out anew from the seed (
 Each map's icon is its source map's icon, turned upside down and tinted: circuit yellow, forest green, mountain blue, factory orange,
 Tokyo pink.
 
+### Some laps
+
+Four seeds of each map, drawn by ProcTrack's own generator (yellow arrow: the way the lap runs from the chequered start line). Put a
+seed in `Map.SeedOverride` to race that lap; in the game it is turned to fit its scene.
+
+![Four laps of each procedural map, drawn by the generator](docs/tracks.png)
+
 ### Weather
 
 Each race gets one of the weathers the game has for that scene (turn this off with `Map.RandomWeather`):
