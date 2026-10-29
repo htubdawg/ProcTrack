@@ -285,7 +285,7 @@ PlanTransplants(env, layout, oldSamples, oldGround, seed);
 			tunnelFrom = -1;
 			if (P.Tunnel)
 			{
-				PlanTunnel(env, layout, oldSamples, oldGround, seed);
+				PlanTunnel(layout, seed);
 			}
 			if (P.Markers)
 			{
