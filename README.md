@@ -1,6 +1,6 @@
 100% AI generated code
 ============================================================
-PROCEDURAL MAPS  (ProcTrack 1.0.19, for Half Grip Demo 0.418)
+PROCEDURAL MAPS  (ProcTrack 1.0.20, for Half Grip Demo 0.418)
 ============================================================
 
 video showcase

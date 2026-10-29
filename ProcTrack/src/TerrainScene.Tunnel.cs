@@ -220,28 +220,33 @@ int from = tunnelFrom;
 			}
 			float roadEdge = RoadHalfWidth - 0.2f;
 			Batch banks = new Batch("tunnel snow bank", Snow, true);
+			const int arc = 6;
+			const float bankHeight = 6.5f;
+			float bankWidth = InnerHalf - 0.1f - roadEdge;
 			foreach (float sg in new[] { 1f, -1f })
 			{
-				// Across from the road's edge to the wall, over the top of the bank; a flat foot under it closes it.
-				Vector2[] bank =
+				// A drift against the wall: a quarter ellipse from the road's edge up to the wall, bulging out, with a flat foot under it.
+				// Its size swells and shrinks along the tube (smooth seeded noise, 75 to 110 percent), and over the last 20 m at each end it
+				// sinks into the ground, so no open end shows.
+				Vector2[] Section(int q)
 				{
-					new Vector2(sg * roadEdge, -0.3f), new Vector2(sg * roadEdge, 0.05f), new Vector2(sg * (InnerHalf - 3.9f), 1.6f),
-					new Vector2(sg * (InnerHalf - 2.9f), 3.3f), new Vector2(sg * (InnerHalf - 1.8f), 4.8f), new Vector2(sg * (InnerHalf - 0.8f), 5.7f),
-					new Vector2(sg * (InnerHalf - 0.1f), 6f), new Vector2(sg * (InnerHalf - 0.1f), -0.3f)
-				};
-				Vector2 middle = Vector2.zero;
-				foreach (Vector2 v in bank)
-				{
-					middle += v;
+					float end = (float)DetMath.Smooth(Math.Min(q, TunnelLength - q) / 4.0);
+					float swell = 0.75f + 0.35f * (0.5f + 0.5f * Lattice(q / 5f, sg * 3f, seed + 911));
+					float f = Math.Max(0.02f, end * swell);
+					Vector2[] p = new Vector2[arc + 3];
+					p[0] = new Vector2(sg * (InnerHalf - 0.1f - bankWidth * f), -0.3f);
+					for (int k = 0; k <= arc; k++)
+					{
+						float t = 0.5f * Mathf.PI * k / arc;
+						p[k + 1] = new Vector2(sg * (InnerHalf - 0.1f - bankWidth * f * Mathf.Cos(t)), bankHeight * f * Mathf.Sin(t) + 0.05f);
+					}
+					p[arc + 2] = new Vector2(sg * (InnerHalf - 0.1f), -0.3f);
+					return p;
 				}
-				middle /= bank.Length;
-				float[] bu = new float[bank.Length];
-				for (int k = 1; k < bank.Length; k++)
-				{
-					bu[k] = bu[k - 1] + (bank[k] - bank[k - 1]).magnitude / tile;
-				}
+				Vector2[] here = Section(0);
 				for (int q = 0; q < TunnelLength; q++)
 				{
+					Vector2[] next = Section(q + 1);
 					int i = (from + q) % n;
 					int j = (i + 1) % n;
 					Vector3 r0 = layout.Right(i);
@@ -250,14 +255,29 @@ int from = tunnelFrom;
 					Vector3 p1 = layout.Points[j];
 					float v0 = (from + q) * layout.Step / tile;
 					float v1 = (from + q + 1) * layout.Step / tile;
-					for (int k = 0; k + 1 < bank.Length; k++)
+					Vector2 middle = Vector2.zero;
+					foreach (Vector2 v in here)
 					{
-						Vector2 a = bank[k];
-						Vector2 c = bank[k + 1];
-						Vector2 mid = (a + c) * 0.5f - middle;
-						banks.QuadUV(p0 + r0 * a.x + Vector3.up * a.y, p0 + r0 * c.x + Vector3.up * c.y, p1 + r1 * c.x + Vector3.up * c.y, p1 + r1 * a.x + Vector3.up * a.y,
-							new Vector2(bu[k], v0), new Vector2(bu[k + 1], v0), new Vector2(bu[k + 1], v1), new Vector2(bu[k], v1), r0 * mid.x + Vector3.up * mid.y);
+						middle += v;
 					}
+					middle /= here.Length;
+					float u0 = 0f;
+					float u1 = 0f;
+					for (int k = 0; k + 1 < here.Length; k++)
+					{
+						Vector2 a = here[k];
+						Vector2 c = here[k + 1];
+						Vector2 an = next[k];
+						Vector2 cn = next[k + 1];
+						float du0 = (c - a).magnitude / tile;
+						float du1 = (cn - an).magnitude / tile;
+						Vector2 mid = (a + c) * 0.5f - middle;
+						banks.QuadUV(p0 + r0 * a.x + Vector3.up * a.y, p0 + r0 * c.x + Vector3.up * c.y, p1 + r1 * cn.x + Vector3.up * cn.y, p1 + r1 * an.x + Vector3.up * an.y,
+							new Vector2(u0, v0), new Vector2(u0 + du0, v0), new Vector2(u1 + du1, v1), new Vector2(u1, v1), r0 * mid.x + Vector3.up * mid.y);
+						u0 += du0;
+						u1 += du1;
+					}
+					here = next;
 				}
 			}
 
