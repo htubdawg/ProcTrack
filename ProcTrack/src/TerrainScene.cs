@@ -432,7 +432,10 @@ if (P.EdgeWall)
 				Seed = local.Seed,
 				Attempt = local.Attempt,
 				MinRadius = local.MinRadius,
-				Fallback = local.Fallback
+				Fallback = local.Fallback,
+				// The Factory's hall goes on the hairpin (CarryTurn), so the placed lap must still say where it is.
+				Hairpin = local.Hairpin,
+				HairpinSpan = local.HairpinSpan
 			};
 		}
 

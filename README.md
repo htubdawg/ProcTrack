@@ -2,7 +2,7 @@
 
 # Procedural Maps (ProcTrack) for Half Grip
 
-**Version 1.0.25** · for Half Grip Demo 0.418 · needs [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) (1.0.5 or newer shows its icon in the mod manager)
+**Version 1.0.26** · for Half Grip Demo 0.418 · needs [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) (1.0.5 or newer shows its icon in the mod manager)
 
 Race maps that build a brand new track from a seed every race. Five procedural maps are dealt into your runs like any other map, each
 one built in one of the game's own scenes, with its props and hazards carried onto the new road. In a Multiplayer room everybody
