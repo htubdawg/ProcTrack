@@ -562,7 +562,17 @@ made.HallTurn = turn;
 				Mod.Log.LogWarning(P.Key + ": the old road has no U-turn near the " + tp.Name + ", it is left out.");
 				return false;
 			}
-			if (!FindTurn(layout.Points, ahead + 10, layout.Count - 1, 360f, Vector3.zero, 0f, out TurnInfo nw))
+			// Only round the generator's hairpin: a bump on the big loop can turn a few degrees more over 360 m (about 4 seeds in 100),
+			// and the hall put there leaves the far side of the map unfinishable.
+			int from = ahead + 10;
+			int to = layout.Count - 1;
+			if (layout.Hairpin >= 0)
+			{
+				int reach = Mathf.RoundToInt(360f / layout.Step);
+				from = Math.Max(from, layout.Hairpin - reach);
+				to = Math.Min(to, layout.Hairpin + reach);
+			}
+			if (!FindTurn(layout.Points, from, to, 360f, Vector3.zero, 0f, out TurnInfo nw))
 			{
 				Mod.Log.LogWarning(P.Key + ": the new lap has no U-turn to put the " + tp.Name + " on, it is left out.");
 				return false;
