@@ -57,8 +57,27 @@ The bots follow a racing line: the road pulled taut, cutting the inside of the b
 
 ## Install
 
-1. Install [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) if you have not already (the
-   [HalfGripMods](https://github.com/4l3x4nd3r0/HalfGripMods) installer sets up BepInEx and HalfGripTools for you).
+You need Windows and the game on Steam.
+
+### Easy way: the installer
+
+1. Download `HalfGrip-Mods-Installer.exe` from the [HalfGripMods Releases page](https://github.com/4l3x4nd3r0/HalfGripMods/releases)
+   (the newest release called "installer") and double-click it. Windows may say "Windows protected your PC" because the file is new
+   and unsigned: press **More info**, then **Run anyway**.
+2. Close the game.
+3. Find **Procedural Maps** under **SUGGESTED** and press its **INSTALL** button. (If it is not listed, press **+ ADD**, paste
+   `https://github.com/htubdawg/ProcTrack` and press **ADD**.)
+4. Start the game from Steam. The first start compiles the mod, which takes a few seconds. The mod manager in the main menu should
+   list **Procedural Maps**.
+
+The installer sets up BepInEx and HalfGripTools if they are missing, and takes ProcTrack's newest release. To update, open the
+installer again (it checks GitHub once an hour; **CHECK NOW** checks straight away). Its menu (top right) has **Remove the mods from
+the game**. More about the installer in the [HalfGripMods README](https://github.com/4l3x4nd3r0/HalfGripMods#install).
+
+### Manual steps
+
+1. Install BepInEx and [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) if you have not already: steps 1 and 2 of the
+   [HalfGripTools README](https://github.com/4l3x4nd3r0/HalfGripTools#install) cover both.
 2. Download this repository (**Code > Download ZIP**) and open the zip.
 3. Delete any older `ProcTrack` folder in `<game>\BepInEx\HalfGripMods\`, then copy the **`ProcTrack`** folder out of the zip into
    `<game>\BepInEx\HalfGripMods\`.
