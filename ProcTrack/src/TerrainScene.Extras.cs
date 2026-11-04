@@ -1635,19 +1635,7 @@ if (index <= ahead + 4 || index >= n - behind || gateZone[index])
 						}
 						float lateral = side * (b + gap + depth * 0.5f);
 						Vector3 centre = layout.At(index, lateral, 0f);
-						float need = Math.Abs(lateral) - 3f;
-						bool clear = true;
-						for (int i = 0; i < n; i += 2)
-						{
-							float dx = layout.Points[i].x - centre.x;
-							float dz = layout.Points[i].z - centre.z;
-							if (dx * dx + dz * dz < need * need)
-							{
-								clear = false;
-								break;
-							}
-						}
-						if (!clear)
+						if (!FootprintClear(layout, centre, Tangent(layout, index), layout.Right(index), along * 0.5f, depth * 0.5f, b + 0.5f))
 						{
 							continue;
 						}
@@ -1679,6 +1667,29 @@ if (index <= ahead + 4 || index >= n - behind || gateZone[index])
 			}
 			int shooters = PlaceShooters(roofs, layout, rng, cityRoot, ahead, behind, 6);
 			Mod.Info("Tokyo: border in " + meshes + " meshes (four themed districts of 250 to 450 m, " + gates +" gates between them (" + signSprites.Count + " shop signs found for them), " + shooters + " rooftop shooters, five kinds of wall, 3.6 to 9.5 m high under a 16 m invisible guard wall), " + placed + " city blocks in two rows behind it (from " + blocks.Count + " of the scene's buildings)");
+		}
+
+		/// <summary>
+		/// True when no point of the lap comes within <paramref name="clear"/> of a block's footprint: the rectangle round
+		/// <paramref name="centre"/> with half sizes <paramref name="halfAlong"/> (along <paramref name="along"/>) and <paramref name="halfAcross"/>
+		/// (along <paramref name="across"/>). Testing only the block's centre (before 1.0.27) let a long block on the inside of a bend, or near
+		/// another stretch of road, reach onto the road with its ends; and a bot put back on the line under it landed on its roof.
+		/// </summary>
+		private static bool FootprintClear(Layout layout, Vector3 centre, Vector3 along, Vector3 across, float halfAlong, float halfAcross, float clear)
+		{
+			float clear2 = clear * clear;
+			foreach (Vector3 p in layout.Points)
+			{
+				float dx = p.x - centre.x;
+				float dz = p.z - centre.z;
+				float u = Math.Max(0f, Math.Abs(dx * along.x + dz * along.z) - halfAlong);
+				float v = Math.Max(0f, Math.Abs(dx * across.x + dz * across.z) - halfAcross);
+				if (u * u + v * v < clear2)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		// ---- trees beside the road -----------------------------------------------------------------------------------
