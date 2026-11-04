@@ -429,9 +429,12 @@ namespace HalfGripProcTrack
 				UnityEngine.Object.Destroy(child.gameObject);
 			}
 // The line the bots drive: pulled taut inside the road (6 m kept from each edge), and each waypoint's width is what is left of the road around it.
+			// A waypoint every 20 m: the game's spline through waypoints 40 m apart (before 1.0.27) cut up to 5 m inside the line in the tightest
+			// corners, and its side lanes, built inside each waypoint's width, reached past the road's edge into Tokyo's inner walls (off line: on
+			// 144 of 200 Tokyo laps, up to 24 m from the middle of a 20 m half road; at 20 m spacing none, 19.4 m at most).
 			float limit = Math.Max(1f, h - 6f);
 			Vector3[] race = RacingLine(layout, limit, out float[] offset);
-			List<int> control = ControlPoints(race, 40f);
+			List<int> control = ControlPoints(race, 20f);
 			for (int i = 0; i < control.Count; i++)
 			{
 				GameObject point = new GameObject("PC" + (i + 1));
@@ -469,7 +472,40 @@ float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
 				scatter.path = line;
 			}
 
-			Mod.Info("Circuit track line: " + control.Count + " control points, " + line.sampledPoints.Count + " samples, " + line.trackLength.ToString("0") + " m, " + line.lanes.Count + " lanes");
+			Mod.Info("Circuit track line: " + control.Count + " control points, " + line.sampledPoints.Count + " samples, " + line.trackLength.ToString("0") + " m, " + line.lanes.Count + " lanes" + (Mod.Verbose != null && Mod.Verbose.Value ? ", " + LaneReach(line, layout, h) : ""));
+		}
+
+		/// <summary>For the verbose log: how far from the middle of the road the bots' lanes reach at most, against the road's half width.</summary>
+		private static string LaneReach(PathManager line, Layout layout, float h)
+		{
+			float worst = 0f;
+			int outside = 0;
+			for (int lane = 0; lane < line.lanes.Count; lane++)
+			{
+				Lane l = line.GetLane(lane);
+				if (l == null)
+				{
+					continue;
+				}
+				for (int i = 0; i < line.sampledPoints.Count; i++)
+				{
+					Vector3 q = line.LanePoint(l, i);
+					float best = float.MaxValue;
+					foreach (Vector3 p in layout.Points)
+					{
+						float dx = p.x - q.x;
+						float dz = p.z - q.z;
+						best = Math.Min(best, dx * dx + dz * dz);
+					}
+					float d = Mathf.Sqrt(best);
+					worst = Math.Max(worst, d);
+					if (d > h)
+					{
+						outside++;
+					}
+				}
+			}
+			return "lanes reach " + worst.ToString("0.0") + " m from the middle of the road (half width " + h.ToString("0") + "), " + outside + " lane points off it";
 		}
 
 		/// <summary>Rivals on the circuit: the Stadium has five grid slots, the Factory and Tokyo seven, so two are added to make the same field.</summary>
