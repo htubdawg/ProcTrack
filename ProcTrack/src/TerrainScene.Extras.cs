@@ -1541,6 +1541,7 @@ go.AddComponent<MeshRenderer>().sharedMaterial = batch.Name.StartsWith("glow") ?
 				if (batch.Collide)
 				{
 					go.AddComponent<MeshCollider>().sharedMesh = mesh;
+					NoRespawn(go);
 				}
 				if (batch.Wall)
 				{
@@ -1656,6 +1657,7 @@ if (index <= ahead + 4 || index >= n - behind || gateZone[index])
 						GameObject clone = UnityEngine.Object.Instantiate(proto.gameObject, place, turn * proto.rotation, cityRoot);
 						clone.name = proto.name;
 						clone.transform.localScale = Vector3.Scale(proto.localScale, proto.parent != null ? proto.parent.lossyScale : Vector3.one);
+						NoRespawn(clone);
 						clone.SetActive(true);
 						placed++;
 						if (row == 0 && block.Size.y >= 14f)
@@ -1667,6 +1669,24 @@ if (index <= ahead + 4 || index >= n - behind || gateZone[index])
 			}
 			int shooters = PlaceShooters(roofs, layout, rng, cityRoot, ahead, behind, 6);
 			Mod.Info("Tokyo: border in " + meshes + " meshes (four themed districts of 250 to 450 m, " + gates +" gates between them (" + signSprites.Count + " shop signs found for them), " + shooters + " rooftop shooters, five kinds of wall, 3.6 to 9.5 m high under a 16 m invisible guard wall), " + placed + " city blocks in two rows behind it (from " + blocks.Count + " of the scene's buildings)");
+		}
+
+		/// <summary>
+		/// Marks a wall or a building as no place to put a reset car (the game's own arches over the Tokyo road are marked so): a bot reset
+		/// is put on the ground found straight down from high over its path, and on 0.419 one that finds such a surface walks back along the
+		/// path instead of landing on a roof or on top of a wall. The handling values are the arches', so nothing else changes.
+		/// </summary>
+		private static void NoRespawn(GameObject go)
+		{
+			if (!go.TryGetComponent(out HandlingModifier modifier))
+			{
+				modifier = go.AddComponent<HandlingModifier>();
+				modifier.gripModifier = 1f;
+				modifier.resistanceModifier = 1f;
+				modifier.suspensionOffset = 0f;
+				modifier.background = false;
+			}
+			modifier.preventRespawn = true;
 		}
 
 		/// <summary>

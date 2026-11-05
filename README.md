@@ -2,7 +2,7 @@
 
 # Procedural Maps (ProcTrack) for Half Grip
 
-**Version 1.0.27** · for Half Grip Demo 0.418 · needs [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) (1.0.5 or newer shows its icon in the mod manager)
+**Version 1.0.28** · for Half Grip Demo 0.418 · needs [HalfGripTools](https://github.com/4l3x4nd3r0/HalfGripTools) (1.0.5 or newer shows its icon in the mod manager)
 
 Race maps that build a brand new track from a seed every race. Five procedural maps are dealt into your runs like any other map, each
 one built in one of the game's own scenes, with its props and hazards carried onto the new road. In a Multiplayer room everybody
@@ -46,7 +46,7 @@ Each race gets one of the weathers the game has for that scene (turn this off wi
 | Factory | fire, night |
 | Tokyo | rainy neon night (its only one) |
 
-The bots follow a racing line: the road pulled taut, cutting the inside of the bends.
+The bots follow a racing line: the road pulled taut, cutting the inside of the bends, on a path of their own as on the game's maps.
 
 ## Seeds and Multiplayer
 
@@ -129,7 +129,7 @@ after changing it.
 | `Map.TestMode` | `false` | Put every race on the map `Map.TestMap` names, to try it out |
 | `Map.TestMap` | `Forest` | The map for `TestMode`: `Circuit`, `Forest`, `Mountain`, `Factory` or `Tokyo` |
 | `Debug.VerboseLog` | `false` | Write the detailed build log (every hazard, sign, wall and tree placed) |
-| `Debug.ShowPath` | `false` | Draw the line the bots and the lap counter follow |
+| `Debug.ShowPath` | `false` | Draw the lap counter's line and the bots' path |
 
 ## Notes
 

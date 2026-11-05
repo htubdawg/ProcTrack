@@ -63,7 +63,7 @@ namespace HalfGripProcTrack
 			BenchmarkFactor = ctx.Config.Bind("Map", "BenchmarkFactor", 0.9f, "Time objectives (\"finish under X s\") are Stadium's times scaled by lap length times this. Lower is harder. Tune it from your own times. Changes only your own objectives.");
 			ShowBoard = ctx.Config.Bind("Map", "ShowBoard", true, "Put a sign with the seed over the start line.");
 			Verbose = ctx.Config.Bind("Debug", "VerboseLog", false, "Write the detailed build log (hall fit, spinner, walls, grass, ...) to the BepInEx log. Off, only each race's seed, warnings and errors are logged.");
-			ShowPath = ctx.Config.Bind("Debug", "ShowPath", false, "Draw the sampled track line the AI and the lap counter follow.");
+			ShowPath = ctx.Config.Bind("Debug", "ShowPath", false, "Draw the lap counter's sampled track line and the bots' own path.");
 
 			MapEntry.Ensure();
 			ctx.OnSceneLoaded(scene =>
