@@ -74,6 +74,11 @@ game folder), scene dumps of every map (`scenedumps/0.418/<map>/`) and tools (`t
 
 Traps already hit:
 
+- Bots drive the LapManager's enemy track line (each scene's `EnemyPaths/Path1`), not `TrackLine`, and steer at the point **3 samples** ahead
+  (samples = `samplesPerSegment` per waypoint gap). The game's maps: 10-17 waypoints, 10 samples, so 45-85 m ahead. 1.0.27 had bots on the lap
+  line with a waypoint every 20 m: 7 m ahead, and they weaved. Since 1.0.28 `Path1` is rebuilt (20 m waypoints, 2 samples, room per side).
+- The generator's waves are added sideways without re-spacing: `Layout.Length` (2700 for Tokyo) is the nominal length, the points measure up to
+  30 percent more and are 5-17 m apart.
 - Scene dumps collapse repeated names after `ShownPerGroup` (default 3); the full Forest dump (`..._20261028-193038`) sets it to 100. Dumps come
   in two variants: terrain data named `... (Mirrored)` has z flipped. ProcTrack races the normal one.
 - The track line's height is not the road's (the Mountain's is 3 m everywhere). Measure heights from the ground.

@@ -417,7 +417,7 @@ namespace HalfGripProcTrack
 			return pts;
 		}
 
-		/// <summary>Replaces Stadium's track line with the lap, and tells the lap counter, the AI and the scatter about it.</summary>
+		/// <summary>Replaces the scene's track line with the lap and rebuilds the bots' own path on it, and tells the lap counter, the AI and the scatter about them.</summary>
 		internal static void Rewire(TrackManager tm, Layout layout, float h, List<GameObject> hidden)
 		{
 			LapManager lap = tm.lapManager;
@@ -428,21 +428,15 @@ namespace HalfGripProcTrack
 				child.SetParent(null);
 				UnityEngine.Object.Destroy(child.gameObject);
 			}
-// The line the bots drive: pulled taut inside the road (6 m kept from each edge), and each waypoint's width is what is left of the road around it.
-			// A waypoint every 20 m: the game's spline through waypoints 40 m apart (before 1.0.27) cut up to 5 m inside the line in the tightest
-			// corners, and its side lanes, built inside each waypoint's width, reached past the road's edge into Tokyo's inner walls (off line: on
-			// 144 of 200 Tokyo laps, up to 24 m from the middle of a 20 m half road; at 20 m spacing none, 19.4 m at most).
+// The lap line (lap counter, crates, the player's reset): the racing line below, a waypoint every 20 m, each as wide as what is left of
+			// the road around it.
 			float limit = Math.Max(1f, h - 6f);
 			Vector3[] race = RacingLine(layout, limit, out float[] offset);
 			List<int> control = ControlPoints(race, 20f);
 			for (int i = 0; i < control.Count; i++)
 			{
-				GameObject point = new GameObject("PC" + (i + 1));
-				point.transform.SetParent(line.transform, true);
-point.transform.position = race[control[i]];
-float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
-				point.transform.localScale = new Vector3(room, 1f, room);
-				point.AddComponent<PathControlPointEditorController>();
+				float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
+				AddWaypoint(line.transform, "PC" + (i + 1), race[control[i]], room, room);
 			}
 
 			AccessTools.Method(typeof(PathManager), "InitializePath").Invoke(line, null);
@@ -455,11 +449,28 @@ float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
 				renderer.enabled = true;
 			}
 
-			// The other track lines belong to Stadium.
-			lap.enemyTrackLines = new List<PathManager> { line };
+			// The bots drive a path of their own, as on every one of the game's maps (EnemyPaths/Path1, the LapManager's enemy track line):
+			// the scene's path is rebuilt on the new lap, so it keeps the map's own lane settings.
+			PathManager bots = lap.enemyTrackLines?.FirstOrDefault(p => p != null && p != line);
+			if (bots != null)
+			{
+				BuildBotPath(bots, race, offset, h);
+				if (Mod.ShowPath.Value && bots.TryGetComponent(out LineRenderer botRenderer))
+				{
+					botRenderer.enabled = true;
+				}
+			}
+			else
+			{
+				Mod.Log.LogWarning("The scene has no enemy track line: the bots drive the lap line.");
+				bots = line;
+			}
+
+			// Every other track line belongs to the old track.
+			lap.enemyTrackLines = new List<PathManager> { bots };
 			foreach (PathManager other in UnityEngine.Object.FindObjectsByType<PathManager>(FindObjectsSortMode.None))
 			{
-				if (other != line)
+				if (other != line && other != bots)
 				{
 					other.gameObject.SetActive(false);
 					hidden.Add(other.gameObject);
@@ -472,8 +483,57 @@ float room = Math.Max(4f, h - Math.Abs(offset[control[i]]) - 1f);
 				scatter.path = line;
 			}
 
-			Mod.Info("Circuit track line: " + control.Count + " control points, " + line.sampledPoints.Count + " samples, " + line.trackLength.ToString("0") + " m, " + line.lanes.Count + " lanes" + (Mod.Verbose != null && Mod.Verbose.Value ? ", " + LaneReach(line, layout, h) : ""));
+			Mod.Info("Track line: " + control.Count + " control points, " + line.sampledPoints.Count + " samples, " + line.trackLength.ToString("0") + " m");
+			if (bots != line)
+			{
+				Mod.Info("Bot path (" + bots.name + "): " + bots.controlPoints.Length + " control points, " + bots.sampledPoints.Count + " samples, " + bots.trackLength.ToString("0") + " m, bots aim " + (3f * bots.trackLength / Math.Max(1, bots.sampledPoints.Count)).ToString("0") + " m ahead, " + bots.lanes.Count + " lanes" + (Mod.Verbose != null && Mod.Verbose.Value ? ", " + LaneReach(bots, layout, h) : ""));
+			}
 		}
+
+		private static void AddWaypoint(Transform parent, string name, Vector3 at, float right, float left)
+		{
+			GameObject point = new GameObject(name);
+			point.transform.SetParent(parent, true);
+			point.transform.position = at;
+			// x: the room to the right of the point, z: to its left (PathManager.SampleControlPoints); y is the grip, left at 1.
+			point.transform.localScale = new Vector3(right, 1f, left);
+			point.AddComponent<PathControlPointEditorController>();
+		}
+
+		/// <summary>
+		/// The path the bots drive, made the way the game's own are: waypoints on a racing line, each with its own room to the right and to
+		/// the left (the game's maps give it per side, e.g. Tokyo's first waypoint 0 m right, 44 m left), and the game bakes its lanes inside.
+		/// The bots steer at the point three samples ahead. The game's maps have 10 to 17 waypoints a lap and 10 samples between two, so they
+		/// aim 45 to 85 m ahead; with the lap line's waypoints every 20 m and 10 samples (1.0.27) they aimed 7 m ahead and weaved out of the
+		/// bends. Here the waypoints stay every 20 m, close enough that the game's spline keeps to the line in the tightest bends, and there
+		/// are 2 samples between two: about 33 m ahead. Checked off line over 30 laps of each map: every lane on the road.
+		/// </summary>
+		private static void BuildBotPath(PathManager bots, Vector3[] race, float[] offset, float h)
+		{
+			foreach (Transform child in bots.transform.Cast<Transform>().ToList())
+			{
+				child.SetParent(null);
+				UnityEngine.Object.Destroy(child.gameObject);
+			}
+			// The path's object may sit off the origin (the Forest's EnemyPaths, the Mountain's Path1): the waypoints are placed in the world.
+			List<int> control = ControlPoints(race, 20f);
+			for (int i = 0; i < control.Count; i++)
+			{
+				float o = offset[control[i]];
+				AddWaypoint(bots.transform, "WP" + (i + 1), race[control[i]], Math.Max(1f, h - o - BotEdgeKeep), Math.Max(1f, h + o - BotEdgeKeep));
+			}
+			bots.gameObject.SetActive(true);
+			bots.enabled = true;
+			Traverse.Create(bots).Field("samplesPerSegment").SetValue(BotSamples);
+			AccessTools.Method(typeof(PathManager), "InitializePath").Invoke(bots, null);
+			Traverse.Create(bots).Field("snapLanesToGround").SetValue(false);
+			bots.BakeRacingLine();
+		}
+
+		/// <summary>Samples between two waypoints of the bots' path (the game's are 10, its waypoints 150 to 280 m apart).</summary>
+		private const int BotSamples = 2;
+		/// <summary>Metres between the bots' path's room and each edge of the road (walls, snow banks).</summary>
+		private const float BotEdgeKeep = 2f;
 
 		/// <summary>For the verbose log: how far from the middle of the road the bots' lanes reach at most, against the road's half width.</summary>
 		private static string LaneReach(PathManager line, Layout layout, float h)
