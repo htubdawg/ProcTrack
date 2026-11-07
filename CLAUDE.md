@@ -1,8 +1,8 @@
 # ProcTrack
 
 A Half Grip (Steam app 4163270, Unity 6, Windows) mod that adds procedural race maps: a new closed lap built from a seed every race. The maps
-are Circuit (in the Stadium), Forest, Mountain, Factory and Tokyo. The release is `ProcTrack/mod.json` (`version`, `gameVersion`): 1.0.25 for
-game 0.418 and HalfGripTools 1.0.5 at the time of writing.
+are Circuit (in the Stadium), Forest, Mountain, Factory and Tokyo. The release is `ProcTrack/mod.json` (`version`, `gameVersion`): 1.0.29 for
+game 0.419 and HalfGripTools 1.0.6 at the time of writing (`"tools"` in `mod.json` is the oldest HalfGripTools it loads under).
 
 ## How the mod runs
 
@@ -10,7 +10,7 @@ game 0.418 and HalfGripTools 1.0.5 at the time of writing.
   `ProcTrack/src/*.cs` with Roslyn 4.8 (**C# 10**, netstandard2.1) against the game's DLLs, BepInEx, 0Harmony and HalfGripTools. What ships is
   the `ProcTrack/` folder (`mod.json`, `icon.png`, `src/`, `sprites/`), installed as `<game>\BepInEx\HalfGripMods\ProcTrack\`. The manager
   lists it as **Procedural Maps**.
-- `mod.json` `"icon": "icon.png"` is the mod manager's picture (HalfGripTools 1.0.5+). `sprites/proctrack_icon.png` is something else: the
+- `mod.json` `"icon": "icon.png"` is the mod manager's picture. `sprites/proctrack_icon.png` is something else: the
   fallback run-map icon when a source map's icon cannot be read.
 - Entry point `Mod : HalfGripMod` in `src/Mod.cs`: config (`halfgrip.proctrack.cfg`), scene callbacks, `ctx.PatchAll()` for `src/Patches.cs`.
 - Loader API: HalfGripTools `docs/WRITING_MODS.md`; known game internals: its `docs/GAME_NOTES.md`. The Highway and Multiplayer mods are in
@@ -53,7 +53,7 @@ to 600 times, else the plain stadium (`Fallback`).
 
 - **Determinism.** Every player in a room must build the identical track and weather from the seed: draw only from `Rng`, never
   `System.Random`/`UnityEngine.Random`; the lap's shape must not depend on a config setting.
-- **Bump `version` in `mod.json` with every change that ships, and the version line in `README.md` with it.** The Multiplayer mod checksums each
+- **Bump `version` in `mod.json` with every change that ships, and the version line in `README.md` with it.** Set `gameVersion` and `tools` to the current game and HalfGripTools at the same time. The Multiplayer mod checksums each
   mod's files in a room, so even an asset change (the icon) needs a new version.
 - C# 10 and netstandard2.1 only. Match the style: tabs, `///` summaries that say why, `Mod.Info(...)` for the verbose log (only with
   `Debug.VerboseLog`), `Mod.Log.LogWarning` and try/catch round risky scene work. A failed build puts the scene back (`Unload`).
@@ -62,7 +62,7 @@ to 600 times, else the plain stadium (`Fallback`).
 ## Checking changes
 
 Private repo [HalfGripRefs](https://github.com/htubdawg/HalfGripRefs) (attach it to the session) has the game's DLLs (`game/`, laid out as the
-game folder), scene dumps of every map (`scenedumps/0.418/<map>/`) and tools (`tools/README.md`):
+game folder), scene dumps of every map (`scenedumps/0.418/<map>/`; `0.419/` has Tokyo and the menu; 0.419 changed only steering, speedrun and stats code) and tools (`tools/README.md`):
 
 - **Compile:** `tools/check-mod.sh ../ProcTrack/ProcTrack/src` must print `0 Error(s)`, `0 Warning(s)`. Needs the .NET 8 SDK
   (`apt-get install -y dotnet-sdk-8.0` if the environment's setup script has not installed it).
@@ -96,3 +96,11 @@ Traps already hit:
 - If you lack access to something (a repo, a host, a tool, game files), ask for it instead of working around it, and do not rebuild a program
   that already exists when access to it could be granted.
 - The owner does not want to touch GitHub beyond pressing merge.
+
+## Status
+
+- **1.0.29** (audit for jMods): game 0.419, HalfGripTools 1.0.6 (`tools` added to `mod.json`). The materials built for each race no
+  longer carry `HideAndDontSave`, so they and the scene textures they point at are freed with the scene instead of piling up all session.
+  Checked: compiles against 0.419 with no errors or warnings; every member named by string (Harmony targets, `Traverse`, `AccessTools`,
+  the Multiplayer mod's `Room.Seed`/`InRace`/`leavingUntil`) exists. 0.419's changes (bots and the player are reset when in water, via
+  the new `WaterRippleField`) do nothing on these maps: no scene dumped so far has a water surface.

@@ -330,6 +330,11 @@ namespace HalfGripProcTrack
 			tmp.overflowMode = TextOverflowModes.Overflow;
 		}
 
+		/// <summary>
+		/// A plain coloured material in the source's shader. Like every material built for a scene here (the road's, the tunnel's), it has no
+		/// HideAndDontSave: that flag keeps an asset past UnloadUnusedAssets, so each race's materials (and the scene textures they point at)
+		/// stayed in memory for the rest of the session. Only the renderers of the scene use them, so they go when it goes.
+		/// </summary>
 		internal static Material MakeMaterial(Material source, Color color)
 		{
 			Shader shader = source != null ? source.shader : null;
@@ -355,7 +360,6 @@ namespace HalfGripProcTrack
 			{
 				m.SetFloat("_Metallic", 0f);
 			}
-			m.hideFlags = HideFlags.HideAndDontSave;
 			return m;
 		}
 

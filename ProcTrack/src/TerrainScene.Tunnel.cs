@@ -131,7 +131,7 @@ int from = tunnelFrom;
 			Color grey = new Color(0.42f, 0.46f, 0.52f);
 			if (old != null && old.mainTexture != null && old.mainTexture.wrapMode == TextureWrapMode.Repeat)
 			{
-				rock = new Material(old) { hideFlags = HideFlags.HideAndDontSave };
+				rock = new Material(old);
 				rock.mainTextureScale = Vector2.one;
 				rock.mainTextureOffset = Vector2.zero;
 			}
@@ -210,7 +210,7 @@ int from = tunnelFrom;
 			Material snow;
 			if (oldSnow != null && oldSnow.mainTexture != null && oldSnow.mainTexture.wrapMode == TextureWrapMode.Repeat)
 			{
-				snow = new Material(oldSnow) { hideFlags = HideFlags.HideAndDontSave };
+				snow = new Material(oldSnow);
 				snow.mainTextureScale = Vector2.one;
 				snow.mainTextureOffset = Vector2.zero;
 			}
