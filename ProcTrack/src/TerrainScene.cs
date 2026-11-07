@@ -1596,7 +1596,7 @@ if (P.RoadsideTrees > 0f)
 			Material material;
 			if (old != null && texture != null && texture.wrapMode == TextureWrapMode.Repeat)
 			{
-				material = new Material(old) { hideFlags = HideFlags.HideAndDontSave };
+				material = new Material(old);
 				material.mainTextureScale = Vector2.one;
 				material.mainTextureOffset = Vector2.zero;
 			}
